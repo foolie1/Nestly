@@ -1,18 +1,180 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 @import 'tailwindcss';
 
+/* ─────────────────────────────────────────────────────────────
+   Design tokens. Every color in the app resolves to one of these.
+   Change a theme here and the whole product follows.
+   Themes are switched with data-theme="…" on <html>.
+   ───────────────────────────────────────────────────────────── */
+:root,
+[data-theme='classic'] {
+  /* brand + accent */
+  --t-brand: #1e2d4e;        /* primary buttons, headings */
+  --t-brand-hover: #2a3f6b;
+  --t-brand-soft: #e0e7ff;
+  --t-accent: #0f7173;       /* links, active states, focus rings */
+  --t-accent-hover: #0d5f61;
+  --t-accent-soft: #e8f4f4;
+  --t-accent-ink: #0f5c5e;
+
+  /* surfaces */
+  --t-page: #f3f2ee;
+  --t-surface: #ffffff;
+  --t-surface-2: #f3f2ee;    /* inset panels, chips */
+  --t-row-hover: #f9f8f5;
+  --t-line: #e2dfd8;
+  --t-line-strong: #c9c5bc;
+
+  /* text */
+  --t-ink: #1a1a1a;
+  --t-muted: #6b6860;
+
+  /* sidebar (shell) */
+  --t-side-bg: #1e2d4e;
+  --t-side-fg: #ffffff;
+  --t-side-muted: rgba(255, 255, 255, 0.6);
+  --t-side-faint: rgba(255, 255, 255, 0.4);
+  --t-side-line: rgba(255, 255, 255, 0.1);
+  --t-side-active: rgba(255, 255, 255, 0.15);
+  --t-side-hover: rgba(255, 255, 255, 0.08);
+  --t-side-logo: #0f7173;
+
+  /* status */
+  --t-success: #16a34a;
+  --t-success-soft: #dcfce7;
+  --t-warning: #d97706;
+  --t-warning-strong: #92400e;
+  --t-warning-soft: #fef3c7;
+  --t-warning-line: #fcd34d;
+  --t-danger: #dc2626;
+  --t-danger-strong: #991b1b;
+  --t-danger-soft: #fee2e2;
+  --t-danger-line: #fca5a5;
+  --t-info: #1d4ed8;
+  --t-info-soft: #dbeafe;
+  --t-purple: #7c3aed;
+  --t-purple-soft: #ede9fe;
+  --t-pink: #be185d;
+  --t-pink-soft: #fce7f3;
+
+  --t-radius: 1rem;          /* cards */
+  --t-radius-sm: 0.75rem;    /* buttons, inputs */
+}
+
+/* Light shell, sky-blue accent — Smartcare-style */
+[data-theme='sky'] {
+  --t-brand: #1d4ed8;
+  --t-brand-hover: #1e40af;
+  --t-brand-soft: #dbeafe;
+  --t-accent: #0ea5e9;
+  --t-accent-hover: #0284c7;
+  --t-accent-soft: #e0f2fe;
+  --t-accent-ink: #075985;
+
+  --t-page: #f5f7fb;
+  --t-surface: #ffffff;
+  --t-surface-2: #eef2f7;
+  --t-row-hover: #f8fafc;
+  --t-line: #e2e8f0;
+  --t-line-strong: #cbd5e1;
+
+  --t-ink: #0f172a;
+  --t-muted: #64748b;
+
+  --t-side-bg: #ffffff;
+  --t-side-fg: #0f172a;
+  --t-side-muted: #475569;
+  --t-side-faint: #94a3b8;
+  --t-side-line: #e2e8f0;
+  --t-side-active: #dbeafe;
+  --t-side-hover: #f1f5f9;
+  --t-side-logo: #1d4ed8;
+
+  --t-radius: 1.25rem;
+  --t-radius-sm: 0.875rem;
+}
+
+/* Light shell, warm coral accent */
+[data-theme='sunrise'] {
+  --t-brand: #0f766e;
+  --t-brand-hover: #115e59;
+  --t-brand-soft: #ccfbf1;
+  --t-accent: #f97316;
+  --t-accent-hover: #ea580c;
+  --t-accent-soft: #ffedd5;
+  --t-accent-ink: #9a3412;
+
+  --t-page: #fbf8f3;
+  --t-surface: #ffffff;
+  --t-surface-2: #f4efe6;
+  --t-row-hover: #fdfaf5;
+  --t-line: #e9e2d6;
+  --t-line-strong: #d3c9b8;
+
+  --t-ink: #1c1917;
+  --t-muted: #78716c;
+
+  --t-side-bg: #fffdf9;
+  --t-side-fg: #1c1917;
+  --t-side-muted: #57534e;
+  --t-side-faint: #a8a29e;
+  --t-side-line: #e9e2d6;
+  --t-side-active: #ffedd5;
+  --t-side-hover: #f4efe6;
+  --t-side-logo: #f97316;
+
+  --t-radius: 1.25rem;
+  --t-radius-sm: 0.875rem;
+}
+
 @theme inline {
-  --color-navy: #1e2d4e;
-  --color-navy-light: #2a3f6b;
-  --color-teal: #0f7173;
-  --color-teal-light: #129fa2;
-  --color-amber: #d97706;
-  --color-rose: #dc2626;
-  --color-green: #16a34a;
-  --color-page: #f3f2ee;
-  --color-card: #ffffff;
-  --color-border: #e2dfd8;
-  --color-muted: #6b6860;
+  --color-brand: var(--t-brand);
+  --color-brand-hover: var(--t-brand-hover);
+  --color-brand-soft: var(--t-brand-soft);
+  --color-accent: var(--t-accent);
+  --color-accent-hover: var(--t-accent-hover);
+  --color-accent-soft: var(--t-accent-soft);
+  --color-accent-ink: var(--t-accent-ink);
+
+  --color-page: var(--t-page);
+  --color-surface: var(--t-surface);
+  --color-surface-2: var(--t-surface-2);
+  --color-row-hover: var(--t-row-hover);
+  --color-line: var(--t-line);
+  --color-line-strong: var(--t-line-strong);
+
+  --color-ink: var(--t-ink);
+  --color-muted: var(--t-muted);
+
+  --color-side: var(--t-side-bg);
+  --color-side-fg: var(--t-side-fg);
+  --color-side-muted: var(--t-side-muted);
+  --color-side-faint: var(--t-side-faint);
+  --color-side-line: var(--t-side-line);
+  --color-side-active: var(--t-side-active);
+  --color-side-hover: var(--t-side-hover);
+  --color-side-logo: var(--t-side-logo);
+
+  --color-success: var(--t-success);
+  --color-success-soft: var(--t-success-soft);
+  --color-warning: var(--t-warning);
+  --color-warning-strong: var(--t-warning-strong);
+  --color-warning-soft: var(--t-warning-soft);
+  --color-warning-line: var(--t-warning-line);
+  --color-danger: var(--t-danger);
+  --color-danger-strong: var(--t-danger-strong);
+  --color-danger-soft: var(--t-danger-soft);
+  --color-danger-line: var(--t-danger-line);
+  --color-info: var(--t-info);
+  --color-info-soft: var(--t-info-soft);
+  --color-purple: var(--t-purple);
+  --color-purple-soft: var(--t-purple-soft);
+  --color-pink: var(--t-pink);
+  --color-pink-soft: var(--t-pink-soft);
+
+  --radius-card: var(--t-radius);
+  --radius-ctl: var(--t-radius-sm);
+
   --font-sans: 'Outfit', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
@@ -20,22 +182,14 @@
 html, body, #root {
   height: 100%;
   font-family: 'Outfit', system-ui, sans-serif;
-  background-color: #f3f2ee;
-  color: #1a1a1a;
+  background-color: var(--t-page);
+  color: var(--t-ink);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
-}
+::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #d1cfc9; border-radius: 2px; }
-::-webkit-scrollbar-thumb:hover { background: #b5b2aa; }
+::-webkit-scrollbar-thumb { background: var(--t-line-strong); border-radius: 2px; }
 
-.font-mono {
-  font-family: 'JetBrains Mono', monospace;
-}
+.font-mono { font-family: 'JetBrains Mono', monospace; }

@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 import { facilities, type Role } from "./data";
 import { useAuth } from "./auth";
+import { ThemeMenu } from "./theme";
 import Login from "./pages/Login";
 import OperatorDashboard from "./pages/OperatorDashboard";
 import CenterDashboard from "./pages/CenterDashboard";
@@ -143,18 +144,18 @@ function Shell({ role }: { role: Role }) {
     <>
       {/* Facility switcher (admin only) */}
       {expanded && role === "owner" && !isOperatorPage && (
-        <div className="px-3 py-3 border-b border-white/10">
-          <p className="text-white/40 text-xs font-mono uppercase tracking-widest mb-1.5 px-1">Center</p>
+        <div className="px-3 py-3 border-b border-side-line">
+          <p className="text-side-faint text-xs font-mono uppercase tracking-widest mb-1.5 px-1">Center</p>
           <div className="space-y-0.5">
             {facilities.map((f) => (
               <button
                 key={f.id}
                 onClick={() => setFacilityId(f.id)}
                 aria-current={facilityId === f.id ? "true" : undefined}
-                className={`w-full text-left px-2.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${facilityId === f.id ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/8 hover:text-white"}`}
+                className={`w-full text-left px-2.5 py-2.5 rounded-ctl text-sm font-medium transition-colors min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${facilityId === f.id ? "bg-side-active text-side-fg" : "text-side-muted hover:bg-side-hover hover:text-side-fg"}`}
               >
                 <div className="flex items-center gap-2">
-                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${f.status === "good" ? "bg-[#4ade80]" : "bg-[#fbbf24]"}`} />
+                  <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${f.status === "good" ? "bg-success" : "bg-warning"}`} />
                   <span className="truncate">{f.name.split(" ").slice(0, 2).join(" ")}</span>
                 </div>
               </button>
@@ -166,14 +167,14 @@ function Shell({ role }: { role: Role }) {
       <nav aria-label="Main" className="flex-1 overflow-y-auto px-2 py-3 space-y-4">
         {groups.map((group) => (
           <div key={group || "main"}>
-            {expanded && group && <p className="text-white/30 text-xs font-mono uppercase tracking-widest px-2 mb-1">{group}</p>}
+            {expanded && group && <p className="text-side-faint text-xs font-mono uppercase tracking-widest px-2 mb-1">{group}</p>}
             <div className="space-y-0.5">
               {nav.filter((n) => n.group === group).map((item) => (
                 <button
                   key={item.id}
                   onClick={() => handleNav(item.id)}
                   aria-current={page === item.id ? "page" : undefined}
-                  className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-lg text-sm font-medium transition-colors min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-white ${page === item.id ? "bg-white/15 text-white" : "text-white/60 hover:bg-white/8 hover:text-white"}`}
+                  className={`w-full flex items-center gap-3 px-2.5 py-2.5 rounded-ctl text-sm font-medium transition-colors min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${page === item.id ? "bg-side-active text-side-fg" : "text-side-muted hover:bg-side-hover hover:text-side-fg"}`}
                   title={!expanded ? item.label : undefined}
                 >
                   <item.Icon size={20} className="flex-shrink-0" aria-hidden />
@@ -186,20 +187,20 @@ function Shell({ role }: { role: Role }) {
       </nav>
 
       {/* User */}
-      <div className="border-t border-white/10 px-3 py-3">
+      <div className="border-t border-side-line px-3 py-3">
         <div className={`flex items-center gap-2.5 ${!expanded ? "justify-center" : ""}`}>
-          <div className="w-8 h-8 rounded-full bg-[#0f7173] flex items-center justify-center text-xs font-bold text-white flex-shrink-0">{user?.initials}</div>
+          <div className="w-8 h-8 rounded-full bg-side-logo flex items-center justify-center text-xs font-bold text-white flex-shrink-0">{user?.initials}</div>
           {expanded && (
             <div className="flex-1 min-w-0">
-              <p className="text-white text-sm font-semibold truncate">{user?.name}</p>
-              <p className="text-white/40 text-xs truncate">{user?.title}</p>
+              <p className="text-side-fg text-sm font-semibold truncate">{user?.name}</p>
+              <p className="text-side-faint text-xs truncate">{user?.title}</p>
             </div>
           )}
           <button
             onClick={signOut}
             aria-label="Sign out"
             title="Sign out"
-            className="w-9 h-9 flex items-center justify-center rounded-lg text-white/50 hover:text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white flex-shrink-0"
+            className="w-9 h-9 flex items-center justify-center rounded-ctl text-side-faint hover:text-side-fg hover:bg-side-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent flex-shrink-0"
           >
             <LogOut size={18} aria-hidden />
           </button>
@@ -209,24 +210,24 @@ function Shell({ role }: { role: Role }) {
   );
 
   return (
-    <div className="flex h-full bg-[#f3f2ee]">
+    <div className="flex h-full bg-page">
       {/* Desktop sidebar */}
-      <aside className={`hidden md:flex flex-col bg-[#1e2d4e] transition-all duration-200 ${sidebarOpen ? "w-60" : "w-16"} flex-shrink-0`}>
-        <div className="h-16 flex items-center px-3 border-b border-white/10 gap-2">
+      <aside className={`hidden md:flex flex-col bg-side border-r border-side-line transition-all duration-200 ${sidebarOpen ? "w-60" : "w-16"} flex-shrink-0`}>
+        <div className="h-16 flex items-center px-3 border-b border-side-line gap-2">
           <div className="flex items-center gap-2.5 overflow-hidden flex-1 min-w-0 pl-1">
-            <div className="w-8 h-8 rounded-lg bg-[#0f7173] flex items-center justify-center flex-shrink-0">
+            <div className="w-8 h-8 rounded-ctl bg-side-logo flex items-center justify-center flex-shrink-0">
               <span className="text-white font-bold text-sm">N</span>
             </div>
             {sidebarOpen && (
               <div className="min-w-0">
-                <p className="text-white font-bold text-sm leading-none">Nestly</p>
-                <p className="text-white/40 text-xs truncate">{isParent ? "Family" : "Childcare Ops"}</p>
+                <p className="text-side-fg font-bold text-sm leading-none">Nestly</p>
+                <p className="text-side-faint text-xs truncate">{isParent ? "Family" : "Childcare Ops"}</p>
               </div>
             )}
           </div>
           <button
             onClick={() => setSidebarOpen((o) => !o)}
-            className="w-9 h-9 flex items-center justify-center text-white/50 hover:text-white rounded-lg hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white flex-shrink-0"
+            className="w-9 h-9 flex items-center justify-center text-side-faint hover:text-side-fg rounded-ctl hover:bg-side-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent flex-shrink-0"
             aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
             aria-expanded={sidebarOpen}
           >
@@ -240,11 +241,11 @@ function Shell({ role }: { role: Role }) {
       {drawerOpen && (
         <div className="md:hidden fixed inset-0 z-50 flex" role="dialog" aria-modal="true" aria-label="Navigation">
           <div className="absolute inset-0 bg-black/40" onClick={() => setDrawerOpen(false)} />
-          <aside className="relative w-72 max-w-[85vw] bg-[#1e2d4e] flex flex-col h-full shadow-2xl">
-            <div className="h-16 flex items-center px-4 border-b border-white/10 gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#0f7173] flex items-center justify-center"><span className="text-white font-bold text-sm">N</span></div>
-              <p className="text-white font-bold flex-1">Nestly</p>
-              <button onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-white rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white"><X size={20} aria-hidden /></button>
+          <aside className="relative w-72 max-w-[85vw] bg-side flex flex-col h-full shadow-2xl">
+            <div className="h-16 flex items-center px-4 border-b border-side-line gap-3">
+              <div className="w-8 h-8 rounded-ctl bg-side-logo flex items-center justify-center"><span className="text-white font-bold text-sm">N</span></div>
+              <p className="text-side-fg font-bold flex-1">Nestly</p>
+              <button onClick={() => setDrawerOpen(false)} aria-label="Close menu" className="w-10 h-10 flex items-center justify-center text-side-muted hover:text-side-fg rounded-ctl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"><X size={20} aria-hidden /></button>
             </div>
             {sidebarInner(true)}
           </aside>
@@ -253,44 +254,45 @@ function Shell({ role }: { role: Role }) {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-16 bg-white border-b border-[#e2dfd8] flex items-center px-3 sm:px-6 flex-shrink-0 gap-2 sm:gap-4">
-          <button onClick={() => setDrawerOpen(true)} aria-label="Open menu" className="md:hidden w-11 h-11 -ml-1 flex items-center justify-center text-[#1e2d4e] rounded-lg hover:bg-[#f3f2ee] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173]">
+        <header className="h-16 bg-white border-b border-line flex items-center px-3 sm:px-6 flex-shrink-0 gap-2 sm:gap-4">
+          <button onClick={() => setDrawerOpen(true)} aria-label="Open menu" className="md:hidden w-11 h-11 -ml-1 flex items-center justify-center text-brand rounded-ctl hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
             <Menu size={22} aria-hidden />
           </button>
 
           {/* Breadcrumb */}
           <div className="flex items-center gap-2 text-sm min-w-0">
             {isParent ? (
-              <span className="text-[#1e2d4e] font-semibold truncate">{currentFacility.name}</span>
+              <span className="text-brand font-semibold truncate">{currentFacility.name}</span>
             ) : (
               <>
-                <span className="text-[#6b6860] hidden lg:inline">Sunshine Childcare Group</span>
+                <span className="text-muted hidden lg:inline">Sunshine Childcare Group</span>
                 {!isOperatorPage && (
                   <>
-                    <span className="text-[#e2dfd8] hidden lg:inline">/</span>
-                    <span className="text-[#1e2d4e] font-medium truncate">{currentFacility.name.split(" ").slice(0, 2).join(" ")}</span>
+                    <span className="text-line hidden lg:inline">/</span>
+                    <span className="text-brand font-medium truncate">{currentFacility.name.split(" ").slice(0, 2).join(" ")}</span>
                   </>
                 )}
-                <span className={`text-[#e2dfd8] ${isOperatorPage ? "hidden lg:inline" : ""}`}>/</span>
-                <span className="text-[#0f7173] font-medium truncate">{nav.find((n) => n.id === page)?.label}</span>
+                <span className={`text-line ${isOperatorPage ? "hidden lg:inline" : ""}`}>/</span>
+                <span className="text-accent font-medium truncate">{nav.find((n) => n.id === page)?.label}</span>
               </>
             )}
           </div>
 
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
             {isAdmin && !isOperatorPage && (
-              <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${currentFacility.status === "good" ? "bg-[#dcfce7] text-[#16a34a]" : "bg-[#fef3c7] text-[#d97706]"}`}>
-                <span className={`w-1.5 h-1.5 rounded-full ${currentFacility.status === "good" ? "bg-[#16a34a]" : "bg-[#d97706]"}`} />
+              <div className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium ${currentFacility.status === "good" ? "bg-success-soft text-success" : "bg-warning-soft text-warning"}`}>
+                <span className={`w-1.5 h-1.5 rounded-full ${currentFacility.status === "good" ? "bg-success" : "bg-warning"}`} />
                 {currentFacility.complianceScore}% compliant
               </div>
             )}
-            <button aria-label="Notifications, 1 unread" className="relative w-11 h-11 flex items-center justify-center text-[#6b6860] hover:text-[#1e2d4e] rounded-lg hover:bg-[#f3f2ee] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173]">
+            <ThemeMenu />
+            <button aria-label="Notifications, 1 unread" className="relative w-11 h-11 flex items-center justify-center text-muted hover:text-brand rounded-ctl hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
               <Bell size={20} aria-hidden />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-[#dc2626] rounded-full" />
+              <span className="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full" />
             </button>
             {!isParent && (
-              <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-[#6b6860] bg-[#f3f2ee] px-2.5 py-1.5 rounded-lg" title="Sync status">
-                <Wifi size={14} className="text-[#16a34a]" aria-hidden /> Online
+              <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-muted bg-surface-2 px-2.5 py-1.5 rounded-ctl" title="Sync status">
+                <Wifi size={14} className="text-success" aria-hidden /> Online
               </div>
             )}
           </div>
@@ -300,13 +302,13 @@ function Shell({ role }: { role: Role }) {
 
         {/* Parent: mobile bottom tab bar */}
         {isParent && (
-          <nav aria-label="Primary" className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-[#e2dfd8] flex z-40 pb-[env(safe-area-inset-bottom)]">
+          <nav aria-label="Primary" className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-line flex z-40 pb-[env(safe-area-inset-bottom)]">
             {nav.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNav(item.id)}
                 aria-current={page === item.id ? "page" : undefined}
-                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 min-h-16 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0f7173] ${page === item.id ? "text-[#0f7173]" : "text-[#6b6860]"}`}
+                className={`flex-1 flex flex-col items-center justify-center gap-1 py-2 min-h-16 text-xs font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent ${page === item.id ? "text-accent" : "text-muted"}`}
               >
                 <item.Icon size={22} aria-hidden strokeWidth={page === item.id ? 2.5 : 2} />
                 {item.label}
