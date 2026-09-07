@@ -10,14 +10,15 @@ import {
   GraduationCap,
   KeyRound,
   Sparkles,
+  Check as CheckIcon,
 } from "lucide-react";
-import { demoUsers, type LoginRole as Role } from "../data";
+import { ADMIN_ROLES, demoUsers, facilities, type LoginRole as Role, type Role as AppRole } from "../data";
 import { loginRoleOf, useAuth } from "../auth";
 
 const ROLES: { id: Role; label: string; blurb: string; Icon: typeof Baby; accent: string }[] = [
-  { id: "parent", label: "Parent / Family", blurb: "See your child's day, pay tuition, message teachers", Icon: Baby, accent: "bg-[#e8f4f4] text-[#0f7173]" },
-  { id: "staff", label: "Teacher / Staff", blurb: "Check kids in, log activities, message families", Icon: GraduationCap, accent: "bg-[#fef3c7] text-[#d97706]" },
-  { id: "admin", label: "Director / Admin", blurb: "Enrollment, billing, compliance — one center or all of them", Icon: Building2, accent: "bg-[#e0e7ff] text-[#1e2d4e]" },
+  { id: "parent", label: "Parent", blurb: "See your child's day, pay tuition, message teachers", Icon: Baby, accent: "bg-[#e8f4f4] text-[#0f7173]" },
+  { id: "staff", label: "Staff", blurb: "Check kids in, log activities, message families", Icon: GraduationCap, accent: "bg-[#fef3c7] text-[#d97706]" },
+  { id: "admin", label: "Owner / Admin", blurb: "Owners, center directors, and office admins", Icon: Building2, accent: "bg-[#e0e7ff] text-[#1e2d4e]" },
 ];
 
 const inputCls =
@@ -57,7 +58,7 @@ export default function Login() {
 function RolePicker({ onPick }: { onPick: (r: Role) => void }) {
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e] text-center">Welcome back</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e] text-center">Welcome</h1>
       <p className="text-[#6b6860] text-center mt-2 mb-8">Who's signing in today?</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {ROLES.map(({ id, label, blurb, Icon, accent }) => (
@@ -141,24 +142,56 @@ function RoleForm({ role, onBack }: { role: Role; onBack: () => void }) {
   );
 }
 
-// ─── Admin: work email + password ─────────────────────────────
+// ─── Owner / Admin: pick your role + center, then work email + password ──
 function AdminForm() {
   const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
   const [show, setShow] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [subRole, setSubRole] = useState<AppRole>("owner");
+  const [facilityId, setFacilityId] = useState(facilities[0].id);
+  const needsCenter = !ADMIN_ROLES.find((r) => r.id === subRole)?.allCenters;
 
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
-        const r = signIn(email, pw, "admin");
+        const r = signIn(email, pw, "admin", { role: subRole, facilityId: needsCenter ? facilityId : undefined });
         if (!r.ok) setError(r.error);
       }}
       className="space-y-4"
       noValidate
     >
+      <div>
+        <p className={labelCls}>I am the…</p>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2" role="radiogroup" aria-label="Your role">
+          {ADMIN_ROLES.map((r) => (
+            <button
+              key={r.id}
+              type="button"
+              role="radio"
+              aria-checked={subRole === r.id}
+              onClick={() => setSubRole(r.id)}
+              className={`text-left border-2 rounded-xl p-3 min-h-[72px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] transition-colors ${subRole === r.id ? "border-[#0f7173] bg-[#e8f4f4]" : "border-[#e2dfd8] hover:border-[#c9c5bc]"}`}
+            >
+              <span className="flex items-center gap-1.5 font-semibold text-sm text-[#1e2d4e]">
+                {subRole === r.id && <CheckIcon size={14} className="text-[#0f7173]" aria-hidden />}
+                {r.label}
+              </span>
+              <span className="block text-xs text-[#6b6860] mt-0.5 leading-snug">{r.blurb}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+      {needsCenter && (
+        <div>
+          <label htmlFor="admin-center" className={labelCls}>Your center</label>
+          <select id="admin-center" value={facilityId} onChange={(e) => setFacilityId(e.target.value)} className={inputCls}>
+            {facilities.map((f) => <option key={f.id} value={f.id}>{f.name} — {f.city}</option>)}
+          </select>
+        </div>
+      )}
       <div>
         <label htmlFor="admin-email" className={labelCls}>Work email</label>
         <input id="admin-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@yourcenter.com" className={inputCls} />
@@ -180,7 +213,7 @@ function AdminForm() {
       </div>
       {error && <ErrorBox msg={error} />}
       <button type="submit" className={primaryBtn} disabled={!email || !pw}>Sign in</button>
-      <p className="text-xs text-[#6b6860] text-center">Director and admin accounts are created by your organization's owner.</p>
+      <p className="text-xs text-[#6b6860] text-center">Director and office admin accounts are created by the organization's owner. Your role and center are confirmed against your account when a real backend is connected.</p>
     </form>
   );
 }

@@ -1,9 +1,12 @@
 import { CalendarCheck, ClipboardList, MessageSquare, Receipt, UserPlus } from "lucide-react";
 import { facilities, children, incidents, staff } from "../data";
+import { useAuth } from "../auth";
 
 type Props = { facilityId: string; onNav: (page: string) => void };
 
 export default function CenterDashboard({ facilityId, onNav }: Props) {
+  const { user } = useAuth();
+  const viewLabel = user?.role === "office_admin" ? "Office Admin View" : user?.role === "owner" ? "Center View" : "Center Director View";
   const facility = facilities.find((f) => f.id === facilityId) ?? facilities[0];
   const centerChildren = children.filter((c) => c.facilityId === facilityId);
   const checkedIn = centerChildren.filter((c) => c.checkedIn).length;
@@ -15,7 +18,7 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Center Director View</p>
+          <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">{viewLabel}</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">{facility.name}</h1>
           <p className="text-[#6b6860] mt-1">{facility.address} · {facility.city}</p>
         </div>

@@ -294,8 +294,14 @@ export const logEntries: LogEntry[] = [
 // ─── Auth / Roles ─────────────────────────────────────────────
 /** Sign-in card the user picks. */
 export type LoginRole = "admin" | "staff" | "parent";
-/** Actual permission level. "admin" card signs in either an owner (all centers) or a director (one center). */
-export type Role = "owner" | "director" | "staff" | "parent";
+/** Actual permission level. The "admin" card signs in an owner (all centers), a center director, or an office admin (one center). */
+export type Role = "owner" | "director" | "office_admin" | "staff" | "parent";
+
+export const ADMIN_ROLES: { id: Extract<Role, "owner" | "director" | "office_admin">; label: string; blurb: string; allCenters: boolean }[] = [
+  { id: "owner", label: "Owner / Operator", blurb: "Every center · revenue, compliance, staffing across the whole organization", allCenters: true },
+  { id: "director", label: "Center Director", blurb: "One center · enrollment, staffing, compliance, billing oversight", allCenters: false },
+  { id: "office_admin", label: "Office Admin", blurb: "One center · enrollment, billing, messaging, documents", allCenters: false },
+];
 
 export type DemoUser = {
   id: string;
@@ -320,6 +326,7 @@ export type DemoUser = {
 export const demoUsers: DemoUser[] = [
   { id: "u-admin", role: "owner", name: "Gene Oglesby", email: "gene@sunshinechildcare.com", secret: "demo1234", title: "Owner / Operator", facilityId: "f1", initials: "GO" },
   { id: "u-director", role: "director", name: "Patricia Lane", email: "patricia@sunshinechildcare.com", secret: "demo1234", title: "Center Director · Coral Springs", facilityId: "f1", initials: "PL" },
+  { id: "u-office", role: "office_admin", name: "Kevin Brooks", email: "kevin@sunshinechildcare.com", secret: "demo1234", title: "Office Admin · Boca Raton", facilityId: "f2", initials: "KB" },
   { id: "u-staff", role: "staff", name: "Denise Morales", email: "denise@sunshinechildcare.com", secret: "2468", title: "Lead Teacher · Bluebell Infants", facilityId: "f1", room: "Bluebell Infants", staffId: "s1", initials: "DM" },
   { id: "u-staff2", role: "staff", name: "Gloria Sánchez", email: "gloria@sunshinechildcare.com", secret: "1357", title: "Lead Teacher · Sunflower Toddlers", facilityId: "f1", room: "Sunflower Toddlers", staffId: "s3", initials: "GS" },
   { id: "u-parent", role: "parent", name: "Maria Torres", email: "maria.torres@email.com", secret: "demo1234", title: "Parent of Amelia", facilityId: "f1", childIds: ["c1"], familyCode: "4471-2290-58", initials: "MT" },

@@ -32,6 +32,7 @@ The login page has one-click demo buttons for each role. To type them in:
 |---|---|---|
 | Owner (all centers) | gene@sunshinechildcare.com | demo1234 |
 | Center Director (one center) | patricia@sunshinechildcare.com | demo1234 |
+| Office Admin (one center) | kevin@sunshinechildcare.com | demo1234 |
 | Staff | denise@sunshinechildcare.com | PIN 2468 |
 | Staff | gloria@sunshinechildcare.com | PIN 1357 |
 | Parent | maria.torres@email.com | demo1234 |

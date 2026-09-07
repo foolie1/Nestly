@@ -71,6 +71,8 @@ const NAV: Record<Role, NavItem[]> = {
   owner: ADMIN_NAV,
   /** Directors run one center: no cross-center page, no facility switcher. */
   director: ADMIN_NAV.filter((n) => n.id !== "operator-dashboard"),
+  /** Office admins: enrollment, check-in, logs, billing, messaging — no compliance/staff scheduling. */
+  office_admin: ADMIN_NAV.filter((n) => !["operator-dashboard", "compliance", "staff"].includes(n.id)),
   staff: [
     { id: "my-room", label: "My Room", Icon: Home, group: "Today" },
     { id: "checkin", label: "Check-in / Out", Icon: CalendarCheck, group: "Today" },
@@ -85,7 +87,7 @@ const NAV: Record<Role, NavItem[]> = {
   ],
 };
 
-const HOME: Record<Role, Page> = { owner: "operator-dashboard", director: "center-dashboard", staff: "my-room", parent: "p-home" };
+const HOME: Record<Role, Page> = { owner: "operator-dashboard", director: "center-dashboard", office_admin: "center-dashboard", staff: "my-room", parent: "p-home" };
 
 export default function App() {
   const { user } = useAuth();
@@ -105,7 +107,7 @@ function Shell({ role }: { role: Role }) {
   const currentFacility = facilities.find((f) => f.id === facilityId) ?? facilities[0];
   const isOperatorPage = page === "operator-dashboard";
   const isParent = role === "parent";
-  const isAdmin = role === "owner" || role === "director";
+  const isAdmin = role === "owner" || role === "director" || role === "office_admin";
 
   const handleNav = (p: string) => { setPage(p as Page); setDrawerOpen(false); };
   const handleSelectFacility = (id: string) => setFacilityId(id);
