@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { X } from "lucide-react";
-import { children } from "../data";
+import { useRoster } from "../roster";
 import { LOG_META, LOG_TYPES, useLogs, type LogType } from "../logs";
 
 type Props = { facilityId: string; roomFilter?: string };
 
 export default function DailyLogs({ facilityId, roomFilter }: Props) {
   const { entries: allEntries, addEntries } = useLogs();
+  const { roster: children } = useRoster();
   const [selectedChild, setSelectedChild] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<LogType | null>(null);
   const [showAdd, setShowAdd] = useState(false);

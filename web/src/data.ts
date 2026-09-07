@@ -34,6 +34,8 @@ export type Child = {
   checkedIn: boolean;
   enrollmentDate: string;
   tuitionStatus: "current" | "overdue" | "pending";
+  /** Set when an owner/director enrolled them into a room already at capacity. */
+  enrolledOverCapacity?: boolean;
 };
 
 export type Staff = {

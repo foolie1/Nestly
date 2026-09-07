@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { facilities, children, Child } from "../data";
+import { facilities, type Child } from "../data";
+import { useRoster } from "../roster";
 import { useAuth } from "../auth";
 
 type Props = { facilityId: string; roomFilter?: string };
@@ -215,13 +216,14 @@ function SignatureModal({
 
 export default function CheckIn({ facilityId, roomFilter }: Props) {
   const { user } = useAuth();
+  const { roster } = useRoster();
   // Teachers see the operational rules; the regulatory framing is for the admin side.
   const showRegNotice = user?.role !== "staff";
   // Ratio status is hidden from teachers for now; the over-ratio block still runs.
   const showRatio = user?.role !== "staff";
   const facilityBase = facilities.find((f) => f.id === facilityId) ?? facilities[0];
   const facility = roomFilter ? { ...facilityBase, rooms: facilityBase.rooms.filter((r) => r.name === roomFilter) } : facilityBase;
-  const facilityChildren = children.filter((c) => c.facilityId === facilityId && (!roomFilter || c.room === roomFilter));
+  const facilityChildren = roster.filter((c) => c.facilityId === facilityId && (!roomFilter || c.room === roomFilter));
   const [childStates, setChildStates] = useState<Record<string, boolean>>(
     Object.fromEntries(facilityChildren.map((c) => [c.id, c.checkedIn]))
   );

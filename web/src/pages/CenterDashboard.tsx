@@ -1,11 +1,13 @@
 import { CalendarCheck, ClipboardList, MessageSquare, Receipt, UserPlus } from "lucide-react";
-import { facilities, children, incidents, staff } from "../data";
+import { facilities, incidents, staff } from "../data";
+import { useRoster } from "../roster";
 import { useAuth } from "../auth";
 
 type Props = { facilityId: string; onNav: (page: string) => void };
 
 export default function CenterDashboard({ facilityId, onNav }: Props) {
   const { user } = useAuth();
+  const { roster: children } = useRoster();
   const viewLabel = user?.role === "office_admin" ? "Office Admin View" : user?.role === "owner" ? "Center View" : "Center Director View";
   const facility = facilities.find((f) => f.id === facilityId) ?? facilities[0];
   const centerChildren = children.filter((c) => c.facilityId === facilityId);

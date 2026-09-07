@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  ArrowLeft,
   Bell,
   CalendarCheck,
   ClipboardList,
@@ -110,7 +111,44 @@ function Shell({ role }: { role: Role }) {
   const isParent = role === "parent";
   const isAdmin = role === "owner" || role === "director" || role === "office_admin";
 
-  const handleNav = (p: string) => { setPage(p as Page); setDrawerOpen(false); };
+  /**
+   * Screen history. Every in-app navigation also pushes onto the browser's
+   * history, so the phone's back gesture and the browser back button behave
+   * the same as the in-app arrow. popstate is what actually changes the page,
+   * which keeps the two stacks from drifting apart.
+   */
+  const backStack = useRef<Page[]>([]);
+  const [canGoBack, setCanGoBack] = useState(false);
+
+  const handleNav = (p: string) => {
+    const next = p as Page;
+    setDrawerOpen(false);
+    if (next === page) return;
+    backStack.current = [...backStack.current, page];
+    setCanGoBack(true);
+    setPage(next);
+    window.history.pushState({ nestly: true }, "");
+  };
+
+  const goBack = () => {
+    if (backStack.current.length === 0) return;
+    window.history.back();
+  };
+
+  useEffect(() => {
+    const onPop = () => {
+      const stack = backStack.current;
+      if (stack.length === 0) return;
+      const previous = stack[stack.length - 1]!;
+      backStack.current = stack.slice(0, -1);
+      setCanGoBack(backStack.current.length > 0);
+      setDrawerOpen(false);
+      setPage(previous);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
   const handleSelectFacility = (id: string) => setFacilityId(id);
 
   // Close the mobile drawer on Escape
@@ -257,6 +295,16 @@ function Shell({ role }: { role: Role }) {
         <header className="h-16 bg-white border-b border-line flex items-center px-3 sm:px-6 flex-shrink-0 gap-2 sm:gap-4">
           <button onClick={() => setDrawerOpen(true)} aria-label="Open menu" className="md:hidden w-11 h-11 -ml-1 flex items-center justify-center text-brand rounded-ctl hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
             <Menu size={22} aria-hidden />
+          </button>
+
+          <button
+            onClick={goBack}
+            disabled={!canGoBack}
+            aria-label="Go back to the previous screen"
+            title="Back"
+            className="w-11 h-11 flex items-center justify-center rounded-ctl text-muted enabled:hover:text-brand enabled:hover:bg-surface-2 disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-accent flex-shrink-0 transition-colors"
+          >
+            <ArrowLeft size={20} aria-hidden />
           </button>
 
           {/* Breadcrumb */}

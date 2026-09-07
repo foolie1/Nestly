@@ -1,9 +1,11 @@
 import { useState } from "react";
-import { incidents, children, staff } from "../data";
+import { incidents, staff } from "../data";
+import { useRoster } from "../roster";
 
 type Props = { facilityId: string };
 
 export default function Compliance({ facilityId }: Props) {
+  const { roster: children } = useRoster();
   const [tab, setTab] = useState<"dashboard" | "incidents" | "log">("dashboard");
   const [selectedIncident, setSelectedIncident] = useState<typeof incidents[0] | null>(null);
   const centerIncidents = incidents.filter((i) => i.facilityId === facilityId);

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AlertTriangle, Baby, BedDouble, Camera, CalendarCheck, Check, ClipboardList, MessageSquare, Smile, Utensils, X, type LucideIcon } from "lucide-react";
-import { children, facilities, staff } from "../../data";
+import { facilities, staff } from "../../data";
+import { useRoster } from "../../roster";
 import { useLogs, type LogType } from "../../logs";
 import { useAuth } from "../../auth";
 
@@ -17,9 +18,10 @@ const QUICK: { id: string; label: string; Icon: LucideIcon; bg: string; fg: stri
 
 export default function MyRoom({ onNav }: Props) {
   const { user } = useAuth();
+  const { roster } = useRoster();
   const facility = facilities.find((f) => f.id === user?.facilityId) ?? facilities[0];
   const room = facility.rooms.find((r) => r.name === user?.room) ?? facility.rooms[0];
-  const kids = children.filter((c) => c.facilityId === facility.id && c.room === room.name);
+  const kids = roster.filter((c) => c.facilityId === facility.id && c.room === room.name);
   const present = kids.filter((c) => c.checkedIn);
   const roomStaff = staff.filter((s) => s.facilityId === facility.id && s.room === room.name);
   const { entries, addEntries } = useLogs();
