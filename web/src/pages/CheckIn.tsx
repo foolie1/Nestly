@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { facilities, children, Child } from "../data";
 
-type Props = { facilityId: string };
+type Props = { facilityId: string; roomFilter?: string };
 
 const ratioLabels: Record<string, string> = {
   infant: "1:4 max (FL §402.305)",
@@ -206,9 +206,10 @@ function SignatureModal({
   );
 }
 
-export default function CheckIn({ facilityId }: Props) {
-  const facility = facilities.find((f) => f.id === facilityId) ?? facilities[0];
-  const facilityChildren = children.filter((c) => c.facilityId === facilityId);
+export default function CheckIn({ facilityId, roomFilter }: Props) {
+  const facilityBase = facilities.find((f) => f.id === facilityId) ?? facilities[0];
+  const facility = roomFilter ? { ...facilityBase, rooms: facilityBase.rooms.filter((r) => r.name === roomFilter) } : facilityBase;
+  const facilityChildren = children.filter((c) => c.facilityId === facilityId && (!roomFilter || c.room === roomFilter));
   const [childStates, setChildStates] = useState<Record<string, boolean>>(
     Object.fromEntries(facilityChildren.map((c) => [c.id, c.checkedIn]))
   );
@@ -256,11 +257,11 @@ export default function CheckIn({ facilityId }: Props) {
   );
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="mb-8 flex items-start justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Check-in / Check-out</p>
-          <h1 className="text-3xl font-bold text-[#1e2d4e]">{facility.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">{facility.name}</h1>
           <p className="text-[#6b6860] mt-1">
             {Object.values(childStates).filter(Boolean).length} of {facilityChildren.length} children present
           </p>
@@ -287,7 +288,7 @@ export default function CheckIn({ facilityId }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search children or guardians..."
-          className="w-full max-w-sm bg-white border border-[#e2dfd8] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-[#0f7173] transition-colors"
+          className="w-full max-w-sm bg-white border border-[#e2dfd8] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173] transition-colors"
         />
       </div>
 
@@ -306,7 +307,7 @@ export default function CheckIn({ facilityId }: Props) {
                 {over ? "⚠ " : ""}Live ratio 1:{ratio > 0 ? ratio.toFixed(1) : "—"} · {room.staffCount} staff on duty
               </span>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {roomChildren.map((child) => {
                 const isIn = childStates[child.id];
                 const sig = signatures[child.id];
@@ -356,7 +357,7 @@ export default function CheckIn({ facilityId }: Props) {
                 );
               })}
               {roomChildren.length === 0 && (
-                <div className="col-span-3 border-2 border-dashed border-[#e2dfd8] rounded-xl p-6 text-center text-sm text-[#6b6860]">
+                <div className="sm:col-span-2 lg:col-span-3 border-2 border-dashed border-[#e2dfd8] rounded-xl p-6 text-center text-sm text-[#6b6860]">
                   No children match the search
                 </div>
               )}

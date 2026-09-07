@@ -17,15 +17,15 @@ export default function Messaging({ facilityId }: Props) {
   const unread = centerMessages.filter((m) => !m.read).length;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-6 flex items-start justify-between">
         <div>
           <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Messaging</p>
-          <h1 className="text-3xl font-bold text-[#1e2d4e]">Messages</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">Messages</h1>
           {unread > 0 && <p className="text-[#0f7173] text-sm mt-1">{unread} unread</p>}
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setCompose(true)} className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#2a3f6b] transition-colors">
+          <button onClick={() => setCompose(true)} className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2.5 min-h-11 rounded-lg hover:bg-[#2a3f6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0f7173] transition-colors">
             Compose
           </button>
           <button className="border border-[#dc2626] text-[#dc2626] text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#fee2e2] transition-colors">
@@ -34,15 +34,15 @@ export default function Messaging({ facilityId }: Props) {
         </div>
       </div>
 
-      <div className="bg-white border border-[#e2dfd8] rounded-xl overflow-hidden flex" style={{ height: "calc(100vh - 240px)", minHeight: 480 }}>
+      <div className="bg-white border border-[#e2dfd8] rounded-xl overflow-hidden flex flex-col md:flex-row" style={{ height: "calc(100vh - 240px)", minHeight: 480 }}>
         {/* Thread List */}
-        <div className="w-80 flex-shrink-0 border-r border-[#e2dfd8] flex flex-col">
+        <div className="w-full md:w-80 md:flex-shrink-0 md:border-r border-[#e2dfd8] flex flex-col">
           <div className="p-3 border-b border-[#e2dfd8]">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search messages..."
-              className="w-full bg-[#f3f2ee] rounded-lg px-3 py-2 text-sm focus:outline-none focus:bg-white border border-transparent focus:border-[#0f7173] transition-all"
+              className="w-full bg-[#f3f2ee] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:bg-white border border-transparent transition-all"
             />
           </div>
           <div className="flex-1 overflow-y-auto divide-y divide-[#e2dfd8]">
@@ -92,7 +92,7 @@ export default function Messaging({ facilityId }: Props) {
                 <div className="flex gap-3">
                   <input
                     placeholder="Reply to this message..."
-                    className="flex-1 bg-[#f3f2ee] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:bg-white border border-transparent focus:border-[#0f7173] transition-all"
+                    className="flex-1 bg-[#f3f2ee] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:bg-white border border-transparent transition-all"
                   />
                   <button className="bg-[#0f7173] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-[#0d5f61] transition-colors">Send</button>
                 </div>
@@ -108,19 +108,19 @@ export default function Messaging({ facilityId }: Props) {
 
       {/* Compose Modal */}
       {compose && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" onClick={() => setCompose(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-end sm:items-center justify-center" onClick={() => setCompose(false)}>
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg p-5 sm:p-6 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-[#1e2d4e] mb-5">New Message</h2>
             <div className="space-y-4">
               {[{ label: "To", placeholder: "Family name or staff member..." }, { label: "Subject", placeholder: "Subject..." }].map((f) => (
                 <div key={f.label}>
                   <label className="text-xs font-mono uppercase tracking-widest text-[#6b6860] block mb-1.5">{f.label}</label>
-                  <input placeholder={f.placeholder} className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173]" />
+                  <input placeholder={f.placeholder} className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173]" />
                 </div>
               ))}
               <div>
                 <label className="text-xs font-mono uppercase tracking-widest text-[#6b6860] block mb-1.5">Message</label>
-                <textarea rows={5} placeholder="Write your message..." className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173] resize-none" />
+                <textarea rows={5} placeholder="Write your message..." className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173] resize-none" />
               </div>
               <div className="p-3 bg-[#f3f2ee] rounded-lg text-xs text-[#6b6860]">
                 <span className="font-semibold text-[#1e2d4e]">Privacy:</span> Guardians can only see messages related to their own child's thread.

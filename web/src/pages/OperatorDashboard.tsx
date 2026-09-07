@@ -9,15 +9,15 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
   const avgCompliance = Math.round(facilities.reduce((s, f) => s + f.complianceScore, 0) / facilities.length);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
       <div className="mb-8">
         <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Operator View</p>
-        <h1 className="text-3xl font-bold text-[#1e2d4e]">Sunshine Childcare Group</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">Sunshine Childcare Group</h1>
         <p className="text-[#6b6860] mt-1">All 3 centers · Florida · Flat per-center billing</p>
       </div>
 
       {/* KPI Row */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         {[
           { label: "Total Enrollment", value: `${totalEnrollment}`, sub: `of ${totalCapacity} seats`, color: "text-[#1e2d4e]" },
           { label: "Monthly Revenue", value: `$${totalRevenue.toLocaleString()}`, sub: "across all centers", color: "text-[#0f7173]" },
@@ -34,11 +34,11 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
 
       {/* Centers Table */}
       <div className="bg-white border border-[#e2dfd8] rounded-xl overflow-hidden mb-8">
-        <div className="px-6 py-4 border-b border-[#e2dfd8] flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4 border-b border-[#e2dfd8] flex items-center justify-between">
           <h2 className="font-semibold text-[#1e2d4e]">Center Overview</h2>
           <span className="text-xs font-mono text-[#6b6860]">LIVE · Updated 8:47 AM</span>
         </div>
-        <table className="w-full">
+        <div className="overflow-x-auto"><table className="w-full min-w-[720px]">
           <thead>
             <tr className="bg-[#f3f2ee] text-xs font-mono uppercase tracking-wider text-[#6b6860]">
               <th className="px-6 py-3 text-left">Center</th>
@@ -99,11 +99,11 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
               );
             })}
           </tbody>
-        </table>
+        </table></div>
       </div>
 
       {/* Compliance Alerts + Room Ratios side by side */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
         <div className="bg-white border border-[#e2dfd8] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[#e2dfd8]">
             <h2 className="font-semibold text-[#1e2d4e]">Compliance Alerts</h2>

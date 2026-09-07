@@ -256,6 +256,9 @@ export const invoices: Invoice[] = [
   { id: "inv008", family: "Nguyen Family", child: "Oliver Nguyen", facilityId: "f2", amount: 1450, dueDate: "2026-09-01", status: "paid", period: "September 2026" },
   { id: "inv009", family: "Garcia Family", child: "Emma Garcia", facilityId: "f2", amount: 1250, dueDate: "2026-09-01", status: "paid", period: "September 2026" },
   { id: "inv010", family: "Brown Family", child: "Ethan Brown", facilityId: "f2", amount: 1100, dueDate: "2026-08-01", status: "overdue", period: "August 2026" },
+  { id: "inv011", family: "Torres Family", child: "Amelia Torres", facilityId: "f1", amount: 1450, dueDate: "2026-08-01", status: "paid", period: "August 2026" },
+  { id: "inv012", family: "Torres Family", child: "Amelia Torres", facilityId: "f1", amount: 1450, dueDate: "2026-07-01", status: "paid", period: "July 2026" },
+  { id: "inv013", family: "Patel Family", child: "Noah Patel", facilityId: "f1", amount: 1450, dueDate: "2026-08-01", status: "paid", period: "August 2026" },
 ];
 
 // ─── Incidents ────────────────────────────────────────────────
@@ -286,4 +289,139 @@ export const logEntries: LogEntry[] = [
   { id: "l7", childId: "c2", childName: "Noah Patel", facilityId: "f1", room: "Bluebell Infants", timestamp: "10:00", type: "meal", detail: "5 oz formula, finished", loggedBy: "Rashida Okafor" },
   { id: "l8", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "10:45", type: "nap", detail: "Woke from nap — alert and happy", loggedBy: "Denise Morales" },
   { id: "l9", childId: "c6", childName: "James Williams", facilityId: "f1", room: "Clover Preschool", timestamp: "10:20", type: "incident", detail: "Small fall during circle time — no injury observed, monitored for 15 min", loggedBy: "Marcus Webb" },
+];
+
+// ─── Auth / Roles ─────────────────────────────────────────────
+/** Sign-in card the user picks. */
+export type LoginRole = "admin" | "staff" | "parent";
+/** Actual permission level. "admin" card signs in either an owner (all centers) or a director (one center). */
+export type Role = "owner" | "director" | "staff" | "parent";
+
+export type DemoUser = {
+  id: string;
+  role: Role;
+  name: string;
+  email: string;
+  /** owner/director + parent: password · staff: 4-digit PIN */
+  secret: string;
+  title: string;
+  facilityId: string;
+  /** staff only — the room they're assigned to */
+  room?: string;
+  /** staff only — links to the staff[] record */
+  staffId?: string;
+  /** parent only — children they're linked to */
+  childIds?: string[];
+  /** parent only — 10-digit family code for first-time setup */
+  familyCode?: string;
+  initials: string;
+};
+
+export const demoUsers: DemoUser[] = [
+  { id: "u-admin", role: "owner", name: "Gene Oglesby", email: "gene@sunshinechildcare.com", secret: "demo1234", title: "Owner / Operator", facilityId: "f1", initials: "GO" },
+  { id: "u-director", role: "director", name: "Patricia Lane", email: "patricia@sunshinechildcare.com", secret: "demo1234", title: "Center Director · Coral Springs", facilityId: "f1", initials: "PL" },
+  { id: "u-staff", role: "staff", name: "Denise Morales", email: "denise@sunshinechildcare.com", secret: "2468", title: "Lead Teacher · Bluebell Infants", facilityId: "f1", room: "Bluebell Infants", staffId: "s1", initials: "DM" },
+  { id: "u-staff2", role: "staff", name: "Gloria Sánchez", email: "gloria@sunshinechildcare.com", secret: "1357", title: "Lead Teacher · Sunflower Toddlers", facilityId: "f1", room: "Sunflower Toddlers", staffId: "s3", initials: "GS" },
+  { id: "u-parent", role: "parent", name: "Maria Torres", email: "maria.torres@email.com", secret: "demo1234", title: "Parent of Amelia", facilityId: "f1", childIds: ["c1"], familyCode: "4471-2290-58", initials: "MT" },
+  { id: "u-parent2", role: "parent", name: "Priya Patel", email: "priya.patel@email.com", secret: "demo1234", title: "Parent of Noah", facilityId: "f1", childIds: ["c2"], familyCode: "8813-0042-71", initials: "PP" },
+];
+
+// ─── Parent-portal data ───────────────────────────────────────
+export type ChildDocument = {
+  id: string;
+  childId: string;
+  name: string;
+  formCode?: string;
+  status: "on-file" | "needs-signature" | "missing" | "expires-soon";
+  date?: string;
+  required: boolean;
+};
+
+export const childDocuments: ChildDocument[] = [
+  { id: "d1", childId: "c1", name: "Florida Certification of Immunization", formCode: "DH 680", status: "on-file", date: "2026-02-10", required: true },
+  { id: "d2", childId: "c1", name: "Enrollment Agreement 2026–27", status: "needs-signature", required: true },
+  { id: "d3", childId: "c1", name: "Emergency Contacts & Authorized Pickups", status: "on-file", date: "2024-08-01", required: true },
+  { id: "d4", childId: "c1", name: "Photo & Media Consent", status: "on-file", date: "2024-08-01", required: false },
+  { id: "d5", childId: "c2", name: "Florida Certification of Immunization", formCode: "DH 680", status: "expires-soon", date: "2026-09-30", required: true },
+  { id: "d6", childId: "c2", name: "Enrollment Agreement 2026–27", status: "on-file", date: "2026-08-15", required: true },
+  { id: "d7", childId: "c2", name: "Emergency Contacts & Authorized Pickups", status: "on-file", date: "2024-09-01", required: true },
+  { id: "d8", childId: "c2", name: "Photo & Media Consent", status: "missing", required: false },
+];
+
+export type AuthorizedPickup = {
+  id: string;
+  childId: string;
+  name: string;
+  relationship: string;
+  phone: string;
+  isPrimary: boolean;
+};
+
+export const authorizedPickups: AuthorizedPickup[] = [
+  { id: "p1", childId: "c1", name: "Maria Torres", relationship: "Mother", phone: "(954) 555-0142", isPrimary: true },
+  { id: "p2", childId: "c1", name: "Daniel Torres", relationship: "Father", phone: "(954) 555-0143", isPrimary: true },
+  { id: "p3", childId: "c1", name: "Carmen Torres", relationship: "Grandmother", phone: "(954) 555-0177", isPrimary: false },
+  { id: "p4", childId: "c2", name: "Priya Patel", relationship: "Mother", phone: "(954) 555-0198", isPrimary: true },
+  { id: "p5", childId: "c2", name: "Arjun Patel", relationship: "Father", phone: "(954) 555-0199", isPrimary: true },
+];
+
+export type FeedItem = {
+  id: string;
+  childId: string;
+  time: string;
+  type: "checkin" | "meal" | "nap" | "diaper" | "bathroom" | "photo" | "note" | "mood" | "learning";
+  title: string;
+  detail?: string;
+  by: string;
+  /** emoji stand-in for a photo in the demo */
+  photo?: string;
+};
+
+export const feed: FeedItem[] = [
+  { id: "fd1", childId: "c1", time: "07:52", type: "checkin", title: "Checked in", detail: "Dropped off by Maria Torres · signed", by: "Denise Morales" },
+  { id: "fd2", childId: "c1", time: "08:02", type: "meal", title: "Bottle · 4 oz formula", detail: "Finished completely", by: "Denise Morales" },
+  { id: "fd3", childId: "c1", time: "08:40", type: "mood", title: "Happy & playful", detail: "Enjoyed tummy time with the sensory mat", by: "Rashida Okafor" },
+  { id: "fd4", childId: "c1", time: "09:30", type: "nap", title: "Nap started", detail: "Swaddled, fell asleep in about 5 minutes", by: "Denise Morales" },
+  { id: "fd5", childId: "c1", time: "10:45", type: "nap", title: "Woke from nap", detail: "1 hr 15 min · alert and happy", by: "Denise Morales" },
+  { id: "fd6", childId: "c1", time: "11:05", type: "photo", title: "Music time 🎶", detail: "Amelia loved the shaker eggs today!", by: "Rashida Okafor", photo: "🎵" },
+  { id: "fd7", childId: "c1", time: "11:30", type: "diaper", title: "Diaper · wet", detail: "Changed, cream applied", by: "Denise Morales" },
+  { id: "fd8", childId: "c1", time: "12:10", type: "learning", title: "Reaching & grasping", detail: "Reached for and held a soft block with both hands — FL Early Learning Standard: Motor Development", by: "Denise Morales" },
+  { id: "fd9", childId: "c2", time: "08:10", type: "checkin", title: "Checked in", detail: "Dropped off by Priya Patel · signed", by: "Rashida Okafor" },
+  { id: "fd10", childId: "c2", time: "08:15", type: "diaper", title: "Diaper · wet", detail: "Changed", by: "Rashida Okafor" },
+  { id: "fd11", childId: "c2", time: "10:00", type: "meal", title: "Bottle · 5 oz formula", detail: "Finished", by: "Rashida Okafor" },
+  { id: "fd12", childId: "c2", time: "10:20", type: "photo", title: "Outdoor stroll ☀️", detail: "Fresh air in the shaded courtyard", by: "Denise Morales", photo: "🌳" },
+  { id: "fd13", childId: "c2", time: "11:40", type: "nap", title: "Nap started", by: "Rashida Okafor" },
+];
+
+export type ParentThread = {
+  id: string;
+  childId: string;
+  /** teacher = child's classroom · office = admin-only, per Procare's pattern */
+  kind: "teacher" | "office";
+  with: string;
+  messages: { id: string; from: "me" | "them"; name: string; body: string; time: string }[];
+};
+
+export const parentThreads: ParentThread[] = [
+  {
+    id: "pt1", childId: "c1", kind: "teacher", with: "Bluebell Infants teachers",
+    messages: [
+      { id: "pm1", from: "me", name: "Maria Torres", body: "Hi Denise, my mother will be picking up Amelia today around 3:30. Her name is Carmen Torres and she's on the authorized pickup list.", time: "08:14" },
+      { id: "pm2", from: "them", name: "Denise Morales", body: "Got it, thank you Maria! We'll have her ready. Amelia's had a great morning so far 😊", time: "08:21" },
+    ],
+  },
+  {
+    id: "pt2", childId: "c1", kind: "office", with: "Coral Springs office",
+    messages: [
+      { id: "pm3", from: "them", name: "Front Office", body: "Reminder: all centers are closed Monday, Sept 1 for Labor Day.", time: "Aug 28" },
+    ],
+  },
+  {
+    id: "pt3", childId: "c2", kind: "office", with: "Coral Springs office",
+    messages: [
+      { id: "pm4", from: "me", name: "Priya Patel", body: "Hello, I noticed my August invoice shows a different amount than I expected. Could someone please review this?", time: "Aug 30" },
+      { id: "pm5", from: "them", name: "Front Office", body: "Hi Priya — looking into it now, we'll have an answer for you by tomorrow morning.", time: "Aug 30" },
+    ],
+  },
+  { id: "pt4", childId: "c2", kind: "teacher", with: "Bluebell Infants teachers", messages: [] },
 ];

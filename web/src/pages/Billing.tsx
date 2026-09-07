@@ -14,20 +14,20 @@ export default function Billing({ facilityId }: Props) {
   const overdue = centerInvoices.filter((i) => i.status === "overdue").reduce((s, i) => s + i.amount, 0);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="mb-8 flex items-start justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Billing</p>
-          <h1 className="text-3xl font-bold text-[#1e2d4e]">Tuition &amp; Invoices</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">Tuition &amp; Invoices</h1>
           <p className="text-[#6b6860] mt-1">September 2026 billing period</p>
         </div>
-        <button onClick={() => setShowGenerate(true)} className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#2a3f6b] transition-colors">
+        <button onClick={() => setShowGenerate(true)} className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2.5 min-h-11 rounded-lg hover:bg-[#2a3f6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0f7173] transition-colors">
           Generate Invoices
         </button>
       </div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         {[
           { label: "Total Billed", value: `$${total.toLocaleString()}`, color: "text-[#1e2d4e]" },
           { label: "Collected", value: `$${paid.toLocaleString()}`, color: "text-[#16a34a]" },
@@ -44,7 +44,7 @@ export default function Billing({ facilityId }: Props) {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-[#e2dfd8] p-1 rounded-lg w-fit">
         {(["invoices", "schedule"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors ${tab === t ? "bg-white text-[#1e2d4e] shadow-sm" : "text-[#6b6860] hover:text-[#1e2d4e]"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] ${tab === t ? "bg-white text-[#1e2d4e] shadow-sm" : "text-[#6b6860] hover:text-[#1e2d4e]"}`}>
             {t === "invoices" ? "Invoice List" : "Tuition Schedule"}
           </button>
         ))}
@@ -52,7 +52,7 @@ export default function Billing({ facilityId }: Props) {
 
       {tab === "invoices" ? (
         <div className="bg-white border border-[#e2dfd8] rounded-xl overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto"><table className="w-full min-w-[720px]">
             <thead>
               <tr className="bg-[#f3f2ee] text-xs font-mono uppercase tracking-wider text-[#6b6860]">
                 <th className="px-6 py-3 text-left">Invoice</th>
@@ -94,7 +94,7 @@ export default function Billing({ facilityId }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       ) : (
         <div className="bg-white border border-[#e2dfd8] rounded-xl overflow-hidden">
@@ -137,8 +137,8 @@ export default function Billing({ facilityId }: Props) {
 
       {/* Generate Invoices Modal */}
       {showGenerate && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" onClick={() => setShowGenerate(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowGenerate(false)}>
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md p-5 sm:p-6 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-[#1e2d4e] mb-1">Generate Invoices</h2>
             <p className="text-sm text-[#6b6860] mb-5">Creates one invoice per enrolled child for the selected period.</p>
             <div className="space-y-4">
@@ -147,7 +147,7 @@ export default function Billing({ facilityId }: Props) {
                 <input
                   value={generateForm.period}
                   onChange={(e) => setGenerateForm((f) => ({ ...f, period: e.target.value }))}
-                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173]"
+                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173]"
                 />
               </div>
               <div>
@@ -156,7 +156,7 @@ export default function Billing({ facilityId }: Props) {
                   type="date"
                   value={generateForm.dueDate}
                   onChange={(e) => setGenerateForm((f) => ({ ...f, dueDate: e.target.value }))}
-                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173]"
+                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173]"
                 />
               </div>
               <div className="space-y-3 pt-1">

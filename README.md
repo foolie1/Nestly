@@ -18,6 +18,27 @@ npm run dev        # http://localhost:5173
 npm run build      # production bundle in web/dist
 ```
 
+## Live demo (GitHub Pages)
+
+Pushing to `main` builds `web/` and deploys it to **https://foolie1.github.io/Nestly/** via `.github/workflows/deploy-web.yml`.
+One-time setup after the first push: repo **Settings → Pages → Source: GitHub Actions**.
+
+## Demo accounts
+
+The login page has one-click demo buttons for each role. To type them in:
+
+| Role | Email | Secret |
+|---|---|---|
+| Owner (all centers) | gene@sunshinechildcare.com | demo1234 |
+| Center Director (one center) | patricia@sunshinechildcare.com | demo1234 |
+| Staff | denise@sunshinechildcare.com | PIN 2468 |
+| Staff | gloria@sunshinechildcare.com | PIN 1357 |
+| Parent | maria.torres@email.com | demo1234 |
+| Parent | priya.patel@email.com | demo1234 |
+| Parent first-time setup | family code `4471-2290-58` | — |
+
+Auth is in-memory (`web/src/auth.tsx`) — swapping in a real backend means replacing `signIn` / `signInAs` there.
+
 ## Figma Make
 
 Live design file: https://www.figma.com/make/pS3jbaaQpn44ibHir8PUbQ/Rough-Draft

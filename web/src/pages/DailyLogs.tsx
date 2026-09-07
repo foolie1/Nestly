@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { logEntries, children } from "../data";
 
-type Props = { facilityId: string };
+type Props = { facilityId: string; roomFilter?: string };
 
 const typeConfig = {
   meal: { label: "Meal", bg: "bg-[#dcfce7]", text: "text-[#16a34a]", icon: "🍼" },
@@ -12,26 +12,26 @@ const typeConfig = {
   incident: { label: "Incident", bg: "bg-[#fee2e2]", text: "text-[#dc2626]", icon: "⚠" },
 };
 
-export default function DailyLogs({ facilityId }: Props) {
+export default function DailyLogs({ facilityId, roomFilter }: Props) {
   const [selectedChild, setSelectedChild] = useState<string>("all");
   const [showAdd, setShowAdd] = useState(false);
   const [newLog, setNewLog] = useState({ type: "meal", detail: "", child: "" });
 
-  const facilityChildren = children.filter((c) => c.facilityId === facilityId && c.checkedIn);
+  const facilityChildren = children.filter((c) => c.facilityId === facilityId && c.checkedIn && (!roomFilter || c.room === roomFilter));
   const entries = logEntries
-    .filter((e) => e.facilityId === facilityId)
+    .filter((e) => e.facilityId === facilityId && (!roomFilter || e.room === roomFilter))
     .filter((e) => selectedChild === "all" || e.childId === selectedChild)
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="mb-8 flex items-start justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Daily Activity Log</p>
-          <h1 className="text-3xl font-bold text-[#1e2d4e]">Today's Log</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">Today's Log</h1>
           <p className="text-[#6b6860] mt-1">Monday, August 31, 2026 · {entries.length} entries</p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#2a3f6b] transition-colors">
+        <button onClick={() => setShowAdd(true)} className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2.5 min-h-11 rounded-lg hover:bg-[#2a3f6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0f7173] transition-colors">
           + Log Entry
         </button>
       </div>
@@ -103,8 +103,8 @@ export default function DailyLogs({ facilityId }: Props) {
 
       {/* Add Log Modal */}
       {showAdd && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" onClick={() => setShowAdd(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowAdd(false)}>
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-md p-5 sm:p-6 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-[#1e2d4e] mb-5">Log New Entry</h2>
             <div className="space-y-4">
               <div>
@@ -112,7 +112,7 @@ export default function DailyLogs({ facilityId }: Props) {
                 <select
                   value={newLog.child}
                   onChange={(e) => setNewLog((l) => ({ ...l, child: e.target.value }))}
-                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173]"
+                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173]"
                 >
                   <option value="">Select child...</option>
                   {facilityChildren.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -139,7 +139,7 @@ export default function DailyLogs({ facilityId }: Props) {
                   onChange={(e) => setNewLog((l) => ({ ...l, detail: e.target.value }))}
                   rows={3}
                   placeholder="Describe the activity..."
-                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173] resize-none"
+                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173] resize-none"
                 />
               </div>
             </div>

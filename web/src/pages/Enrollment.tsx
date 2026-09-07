@@ -22,13 +22,13 @@ export default function Enrollment({ facilityId }: Props) {
   const centerChildren = children.filter((c) => c.facilityId === facilityId);
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="mb-8 flex items-start justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Enrollment</p>
-          <h1 className="text-3xl font-bold text-[#1e2d4e]">Enrollment Pipeline</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">Enrollment Pipeline</h1>
         </div>
-        <button onClick={() => setShowNewInquiry(true)} className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#2a3f6b] transition-colors">
+        <button onClick={() => setShowNewInquiry(true)} className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2.5 min-h-11 rounded-lg hover:bg-[#2a3f6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0f7173] transition-colors">
           + New Inquiry
         </button>
       </div>
@@ -36,14 +36,14 @@ export default function Enrollment({ facilityId }: Props) {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-[#e2dfd8] p-1 rounded-lg w-fit">
         {(["pipeline", "roster"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${tab === t ? "bg-white text-[#1e2d4e] shadow-sm" : "text-[#6b6860] hover:text-[#1e2d4e]"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] capitalize ${tab === t ? "bg-white text-[#1e2d4e] shadow-sm" : "text-[#6b6860] hover:text-[#1e2d4e]"}`}>
             {t === "pipeline" ? "Pipeline" : "Enrolled Roster"}
           </button>
         ))}
       </div>
 
       {tab === "pipeline" ? (
-        <div className="flex gap-4 overflow-x-auto pb-4">
+        <div className="flex gap-3 sm:gap-4 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
           {STAGES.map((stage) => {
             const stageLeads = leads.filter((l) => l.stage === stage.id);
             return (
@@ -80,7 +80,7 @@ export default function Enrollment({ facilityId }: Props) {
         </div>
       ) : (
         <div className="bg-white border border-[#e2dfd8] rounded-xl overflow-hidden">
-          <table className="w-full">
+          <div className="overflow-x-auto"><table className="w-full min-w-[720px]">
             <thead>
               <tr className="bg-[#f3f2ee] text-xs font-mono uppercase tracking-wider text-[#6b6860]">
                 <th className="px-6 py-3 text-left">Child</th>
@@ -131,14 +131,14 @@ export default function Enrollment({ facilityId }: Props) {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>
         </div>
       )}
 
       {/* New Inquiry Modal */}
       {showNewInquiry && (
-        <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center" onClick={() => setShowNewInquiry(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg p-6" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowNewInquiry(false)}>
+          <div className="bg-white rounded-t-3xl sm:rounded-2xl shadow-2xl w-full sm:max-w-lg p-5 sm:p-6 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-[#1e2d4e] mb-5">New Inquiry</h2>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
@@ -148,7 +148,7 @@ export default function Enrollment({ facilityId }: Props) {
                     value={newInquiry.childName}
                     onChange={(e) => setNewInquiry((f) => ({ ...f, childName: e.target.value }))}
                     placeholder="First Last"
-                    className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173]"
+                    className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173]"
                   />
                 </div>
                 <div>
@@ -157,7 +157,7 @@ export default function Enrollment({ facilityId }: Props) {
                     value={newInquiry.guardianName}
                     onChange={(e) => setNewInquiry((f) => ({ ...f, guardianName: e.target.value }))}
                     placeholder="First Last"
-                    className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173]"
+                    className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173]"
                   />
                 </div>
               </div>
@@ -168,7 +168,7 @@ export default function Enrollment({ facilityId }: Props) {
                     value={newInquiry.phone}
                     onChange={(e) => setNewInquiry((f) => ({ ...f, phone: e.target.value }))}
                     placeholder="(000) 000-0000"
-                    className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173]"
+                    className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173]"
                   />
                 </div>
                 <div>
@@ -177,7 +177,7 @@ export default function Enrollment({ facilityId }: Props) {
                     value={newInquiry.email}
                     onChange={(e) => setNewInquiry((f) => ({ ...f, email: e.target.value }))}
                     placeholder="email@example.com"
-                    className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173]"
+                    className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173]"
                   />
                 </div>
               </div>
@@ -186,7 +186,7 @@ export default function Enrollment({ facilityId }: Props) {
                 <select
                   value={newInquiry.ageGroup}
                   onChange={(e) => setNewInquiry((f) => ({ ...f, ageGroup: e.target.value }))}
-                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173]"
+                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173]"
                 >
                   <option value="">Select age group...</option>
                   <option>Infant (0–18 mo)</option>
@@ -202,7 +202,7 @@ export default function Enrollment({ facilityId }: Props) {
                   onChange={(e) => setNewInquiry((f) => ({ ...f, notes: e.target.value }))}
                   rows={3}
                   placeholder="Desired start date, referral source, questions..."
-                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-[#0f7173] resize-none"
+                  className="w-full border border-[#e2dfd8] rounded-lg px-3 py-2 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] focus:border-[#0f7173] resize-none"
                 />
               </div>
             </div>
@@ -222,7 +222,7 @@ export default function Enrollment({ facilityId }: Props) {
       {/* Detail Panel */}
       {selected && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-end" onClick={() => setSelected(null)}>
-          <div className="bg-white h-full w-96 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-white h-full w-full sm:w-96 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="px-6 py-5 border-b border-[#e2dfd8] flex items-start justify-between">
               <div>
                 <p className="text-xs font-mono text-[#6b6860] uppercase tracking-widest mb-1">{selected.stage.toUpperCase()}</p>

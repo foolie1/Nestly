@@ -9,7 +9,7 @@ import siteConfiguration from './.figma/make/site.json' with { type: 'json' }
 // and the `<!-- figma:* -->` slot substitution in index.html. The Figma-preview-only
 // plugins (error overlay replay, refresh-boundary fallback, story kit) were dropped.
 export default defineConfig(({ mode }) => ({
-  base: process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` : '/',
+  base: process.env.BASE_PATH ?? (process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` : '/'),
   build: { sourcemap: mode === 'development' ? 'inline' : false },
   plugins: [react(), tailwindcss(), siteSlots(siteConfiguration)],
   resolve: { alias: { '@': path.resolve(__dirname, './src') } },

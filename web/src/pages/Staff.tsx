@@ -11,14 +11,14 @@ export default function Staff({ facilityId }: Props) {
   const facility = facilities.find((f) => f.id === facilityId) ?? facilities[0];
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
-      <div className="mb-8 flex items-start justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Staff</p>
-          <h1 className="text-3xl font-bold text-[#1e2d4e]">Scheduling &amp; Certifications</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">Scheduling &amp; Certifications</h1>
           <p className="text-[#6b6860] mt-1">{facility.name} · {centerStaff.length} staff members</p>
         </div>
-        <button className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#2a3f6b] transition-colors">
+        <button className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2.5 min-h-11 rounded-lg hover:bg-[#2a3f6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0f7173] transition-colors">
           + Add Staff
         </button>
       </div>
@@ -26,7 +26,7 @@ export default function Staff({ facilityId }: Props) {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-[#e2dfd8] p-1 rounded-lg w-fit">
         {(["schedule", "certifications"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${tab === t ? "bg-white text-[#1e2d4e] shadow-sm" : "text-[#6b6860] hover:text-[#1e2d4e]"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] capitalize ${tab === t ? "bg-white text-[#1e2d4e] shadow-sm" : "text-[#6b6860] hover:text-[#1e2d4e]"}`}>
             {t === "schedule" ? "Weekly Schedule" : "Certifications"}
           </button>
         ))}
@@ -35,8 +35,8 @@ export default function Staff({ facilityId }: Props) {
       {tab === "schedule" && (
         <>
           {/* Weekly grid */}
-          <div className="bg-white border border-[#e2dfd8] rounded-xl overflow-hidden mb-6">
-            <div className="grid grid-cols-6 border-b border-[#e2dfd8]">
+          <div className="bg-white border border-[#e2dfd8] rounded-xl overflow-x-auto mb-6">
+            <div className="min-w-[760px] grid grid-cols-6 border-b border-[#e2dfd8]">
               <div className="px-4 py-3 bg-[#f3f2ee]">
                 <span className="text-xs font-mono uppercase tracking-wider text-[#6b6860]">Staff</span>
               </div>
@@ -140,7 +140,7 @@ export default function Staff({ facilityId }: Props) {
                   </span>
                 </div>
                 <div className="px-6 py-4">
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {/* Background Screening */}
                     <div className={`rounded-xl p-4 ${s.backgroundScreening.status === "clear" ? "bg-[#f3f2ee]" : s.backgroundScreening.status === "pending" ? "bg-[#fef3c7]" : "bg-[#fee2e2]"}`}>
                       <p className="text-xs font-mono uppercase tracking-widest text-[#6b6860] mb-1">Level 2 Background</p>

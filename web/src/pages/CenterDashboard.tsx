@@ -1,3 +1,4 @@
+import { CalendarCheck, ClipboardList, MessageSquare, Receipt, UserPlus } from "lucide-react";
 import { facilities, children, incidents, staff } from "../data";
 
 type Props = { facilityId: string; onNav: (page: string) => void };
@@ -11,11 +12,11 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
   const immWarnings = centerChildren.filter((c) => c.immunizationStatus !== "current").length;
 
   return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <div className="mb-8 flex items-start justify-between">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
+      <div className="mb-6 sm:mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Center Director View</p>
-          <h1 className="text-3xl font-bold text-[#1e2d4e]">{facility.name}</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">{facility.name}</h1>
           <p className="text-[#6b6860] mt-1">{facility.address} · {facility.city}</p>
         </div>
         <div className="flex items-center gap-2">
@@ -28,8 +29,23 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
         </div>
       </div>
 
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 sm:gap-3 mb-6 sm:mb-8">
+        {[
+          { label: "Check in a child", Icon: CalendarCheck, page: "checkin" },
+          { label: "Log activity", Icon: ClipboardList, page: "logs" },
+          { label: "New inquiry", Icon: UserPlus, page: "enrollment" },
+          { label: "Message families", Icon: MessageSquare, page: "messaging" },
+          { label: "Invoices", Icon: Receipt, page: "billing" },
+        ].map((a) => (
+          <button key={a.page} onClick={() => onNav(a.page)} className="bg-[#1e2d4e] text-white rounded-xl px-3 py-3 min-h-14 flex items-center gap-2.5 text-sm font-medium hover:bg-[#2a3f6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0f7173] transition-colors">
+            <a.Icon size={20} className="flex-shrink-0" aria-hidden /> <span className="truncate">{a.label}</span>
+          </button>
+        ))}
+      </div>
+
       {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         {[
           { label: "Enrolled", value: `${facility.enrollment}`, sub: `of ${facility.capacity} seats`, action: () => onNav("enrollment") },
           { label: "Checked In Today", value: `${checkedIn}`, sub: `of ${facility.enrollment} enrolled`, action: () => onNav("checkin") },
@@ -38,15 +54,15 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
         ].map((k) => (
           <button key={k.label} onClick={k.action} className="bg-white border border-[#e2dfd8] rounded-xl p-5 text-left hover:border-[#0f7173] hover:shadow-sm transition-all">
             <p className="text-xs font-mono uppercase tracking-widest text-[#6b6860] mb-2">{k.label}</p>
-            <p className="text-3xl font-bold text-[#1e2d4e]">{k.value}</p>
+            <p className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">{k.value}</p>
             <p className="text-xs text-[#6b6860] mt-1">{k.sub}</p>
           </button>
         ))}
       </div>
 
       {/* Rooms + Staff */}
-      <div className="grid grid-cols-3 gap-6 mb-8">
-        <div className="col-span-2 bg-white border border-[#e2dfd8] rounded-xl overflow-hidden">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-8">
+        <div className="lg:col-span-2 bg-white border border-[#e2dfd8] rounded-xl overflow-hidden">
           <div className="px-6 py-4 border-b border-[#e2dfd8] flex items-center justify-between">
             <h2 className="font-semibold text-[#1e2d4e]">Rooms &amp; Live Ratios</h2>
             <button onClick={() => onNav("checkin")} className="text-xs text-[#0f7173] font-medium hover:underline">Manage check-in →</button>
@@ -76,7 +92,7 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
                     <div className="flex-1 bg-[#e2dfd8] rounded-full h-1.5">
                       <div className="h-full bg-[#0f7173] rounded-full transition-all" style={{ width: `${pct * 100}%` }} />
                     </div>
-                    <span className="text-xs font-mono text-[#6b6860] w-16 text-right">{r.staffCount} staff on</span>
+                    <span className="text-xs font-mono text-[#6b6860] whitespace-nowrap">{r.staffCount} staff on</span>
                   </div>
                 </div>
               );

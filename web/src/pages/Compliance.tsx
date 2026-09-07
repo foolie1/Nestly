@@ -17,17 +17,17 @@ export default function Compliance({ facilityId }: Props) {
   const bgIssues = centerStaff.filter((s) => s.backgroundScreening.status !== "clear");
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       <div className="mb-8">
         <p className="text-sm font-mono text-[#6b6860] uppercase tracking-widest mb-1">Compliance</p>
-        <h1 className="text-3xl font-bold text-[#1e2d4e]">Florida Compliance Dashboard</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-[#1e2d4e]">Florida Compliance Dashboard</h1>
         <p className="text-[#6b6860] mt-1">Rule pack: Florida (FL Statute §402.305 · Fla. Admin. Code Ch. 65C-22)</p>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-[#e2dfd8] p-1 rounded-lg w-fit">
         {(["dashboard", "incidents", "log"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-1.5 rounded-md text-sm font-medium transition-colors capitalize ${tab === t ? "bg-white text-[#1e2d4e] shadow-sm" : "text-[#6b6860] hover:text-[#1e2d4e]"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-md text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] capitalize ${tab === t ? "bg-white text-[#1e2d4e] shadow-sm" : "text-[#6b6860] hover:text-[#1e2d4e]"}`}>
             {t === "dashboard" ? "Overview" : t === "incidents" ? "Incidents" : "Audit Log"}
           </button>
         ))}
@@ -36,7 +36,7 @@ export default function Compliance({ facilityId }: Props) {
       {tab === "dashboard" && (
         <div className="space-y-6">
           {/* Compliance score */}
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {[
               { label: "Overall Score", value: "89%", color: "text-[#d97706]", sub: "2 open items require action" },
               { label: "Incidents This Month", value: `${centerIncidents.length}`, color: "text-[#dc2626]", sub: `${centerIncidents.filter((i) => !i.guardianSigned).length} pending guardian signature` },
@@ -130,7 +130,7 @@ export default function Compliance({ facilityId }: Props) {
           {/* Florida Ratios Reference */}
           <div className="bg-[#f3f2ee] border border-[#e2dfd8] rounded-xl p-5">
             <p className="font-semibold text-[#1e2d4e] mb-3 text-sm">Florida Staff-to-Child Ratio Requirements</p>
-            <div className="grid grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
               {[
                 { age: "Infants", range: "Under 18 months", ratio: "1:4" },
                 { age: "Toddlers", range: "18–36 months", ratio: "1:6" },
@@ -153,7 +153,7 @@ export default function Compliance({ facilityId }: Props) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-[#6b6860]">{centerIncidents.length} incidents this month</p>
-            <button className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#2a3f6b] transition-colors">
+            <button className="bg-[#1e2d4e] text-white text-sm font-medium px-4 py-2.5 min-h-11 rounded-lg hover:bg-[#2a3f6b] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0f7173] transition-colors">
               + Log Incident
             </button>
           </div>
@@ -190,7 +190,7 @@ export default function Compliance({ facilityId }: Props) {
 
           {selectedIncident && (
             <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-end" onClick={() => setSelectedIncident(null)}>
-              <div className="bg-white h-full w-96 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-white h-full w-full sm:w-96 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="px-6 py-5 border-b border-[#e2dfd8] flex items-start justify-between">
                   <h2 className="text-lg font-bold text-[#1e2d4e]">Incident Report</h2>
                   <button onClick={() => setSelectedIncident(null)} className="text-[#6b6860] hover:text-[#1e2d4e] text-xl">×</button>
