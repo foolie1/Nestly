@@ -1,0 +1,149 @@
+{
+  "state": "FL",
+  "stateName": "Florida",
+  "version": 1,
+  "effectiveFrom": "2026-01-01",
+  "reviewed": false,
+
+  "ratios": [
+    {
+      "ageBand": "infant",
+      "label": "Infants (birth to under 18 months)",
+      "maxAgeMonths": 18,
+      "maxChildrenPerStaff": 4,
+      "citation": "Fla. Stat. §402.305(4)(a)1; Fla. Admin. Code Ch. 65C-22"
+    },
+    {
+      "ageBand": "toddler",
+      "label": "Toddlers (18 months to under 3 years)",
+      "maxAgeMonths": 36,
+      "maxChildrenPerStaff": 6,
+      "citation": "Fla. Stat. §402.305(4)(a)2"
+    },
+    {
+      "ageBand": "preschool",
+      "label": "Preschool (3 years to under 5 years)",
+      "maxAgeMonths": 60,
+      "maxChildrenPerStaff": 15,
+      "citation": "Fla. Stat. §402.305(4)(a)3–5 (3yo 1:15, 4yo 1:20, 5yo 1:25 — this pack conservatively applies 1:15 across the band; split into per-year bands once confirmed)"
+    },
+    {
+      "ageBand": "school_age",
+      "label": "School-age (5 years and up)",
+      "maxChildrenPerStaff": 20,
+      "citation": "Fla. Stat. §402.305(4)(a)6 (1:25 in statute; PRD §10 research used 1:20 — conservative value kept until reconciled)"
+    }
+  ],
+  "mixedAgeRule": "youngest_governs",
+
+  "requiredDocuments": [
+    {
+      "type": "immunization",
+      "formCode": "DH 680",
+      "label": "Florida Certification of Immunization (Form DH 680)",
+      "deadlineDays": 30,
+      "exclusionOnMiss": true,
+      "appliesToAgeBands": ["infant", "toddler", "preschool"],
+      "citation": "Fla. Admin. Code 65C-22.006; Fla. Stat. §402.305(9)"
+    },
+    {
+      "type": "emergency_contacts",
+      "label": "Emergency contact information",
+      "deadlineDays": 0,
+      "exclusionOnMiss": false,
+      "citation": "Fla. Admin. Code 65C-22.006 (child enrollment records)"
+    },
+    {
+      "type": "authorized_pickups",
+      "label": "Authorized pick-up list",
+      "deadlineDays": 0,
+      "exclusionOnMiss": false,
+      "citation": "Fla. Admin. Code 65C-22.006 (child enrollment records)"
+    },
+    {
+      "type": "enrollment_agreement",
+      "label": "Signed enrollment agreement",
+      "deadlineDays": 0,
+      "exclusionOnMiss": false,
+      "citation": "Operator policy (not a state requirement)"
+    }
+  ],
+
+  "staffScreening": {
+    "level": 2,
+    "label": "Level 2 background screening",
+    "minWeeklyContactHours": 10,
+    "rescreenIntervalYears": 5,
+    "requiredBeforeStart": true,
+    "components": [
+      "FBI fingerprint check",
+      "FDLE state criminal history",
+      "Florida child abuse/neglect registry",
+      "Adult protective services registry",
+      "Local criminal records check"
+    ],
+    "citation": "Fla. Stat. §402.305(2), §435.04; Florida DCF Background Screening (Clearinghouse)"
+  },
+
+  "certifications": [
+    {
+      "type": "cpr",
+      "label": "Infant/child CPR",
+      "ratioCritical": false,
+      "renewalIntervalMonths": 24,
+      "citation": "Fla. Admin. Code 65C-22.001 (at least one CPR/first-aid certified staff on site at all times — facility-level, not per-staff)"
+    },
+    {
+      "type": "first_aid",
+      "label": "First aid",
+      "ratioCritical": false,
+      "renewalIntervalMonths": 36,
+      "citation": "Fla. Admin. Code 65C-22.001"
+    },
+    {
+      "type": "training_hours",
+      "label": "40-hour introductory child care training + 10 annual in-service hours",
+      "ratioCritical": false,
+      "renewalIntervalMonths": 12,
+      "citation": "Fla. Stat. §402.305(2)(d); Fla. Admin. Code 65C-22.003"
+    }
+  ],
+
+  "incidentReport": {
+    "provisional": true,
+    "notifyGuardianWithinHours": 24,
+    "requireGuardianSignature": true,
+    "fields": [
+      { "key": "occurredAt", "label": "Date and time of incident", "kind": "datetime", "required": true },
+      { "key": "location", "label": "Location within the facility", "kind": "text", "required": true },
+      { "key": "category", "label": "Type of incident", "kind": "select", "required": true,
+        "options": ["injury", "illness", "behavioral", "medication", "allergic_reaction", "missing_child", "other"] },
+      { "key": "description", "label": "Description of what happened", "kind": "longtext", "required": true },
+      { "key": "injuryDescription", "label": "Nature and location of injury (if any)", "kind": "longtext", "required": false },
+      { "key": "actionTaken", "label": "First aid / action taken", "kind": "longtext", "required": true },
+      { "key": "witnesses", "label": "Staff present / witnesses", "kind": "text", "required": true },
+      { "key": "medicalAttentionSought", "label": "Medical attention sought", "kind": "boolean", "required": true },
+      { "key": "guardianNotifiedAt", "label": "Parent/guardian notified at", "kind": "datetime", "required": true },
+      { "key": "staffSignature", "label": "Reporting staff signature", "kind": "signature", "required": true },
+      { "key": "directorSignature", "label": "Director signature", "kind": "signature", "required": true },
+      { "key": "guardianSignature", "label": "Parent/guardian signature", "kind": "signature", "required": true }
+    ],
+    "citation": "PROVISIONAL — Fla. Admin. Code 65C-22.004 (accident/incident records) field list not yet confirmed from primary source; see START_HERE open items. Field set above reflects common provider practice and must be reconciled before the Daily Logs incident sub-form validation is finalized."
+  },
+
+  "retention": [
+    { "documentType": "immunization", "retainYears": null, "citation": "No single statewide period published; common practice is indefinite (PRD §10)" },
+    { "documentType": "incident_report", "retainYears": null, "citation": "Provisional — confirm with 65C-22 records-retention language" },
+    { "documentType": "staff_screening", "retainYears": null, "citation": "Provisional — retain for employment duration plus screening cycle at minimum" }
+  ],
+
+  "sources": [
+    { "title": "Florida Statutes §402.305 — Licensing standards; child care facilities", "url": "http://www.leg.state.fl.us/statutes/index.cfm?App_mode=Display_Statute&URL=0400-0499/0402/Sections/0402.305.html" },
+    { "title": "Florida Administrative Code Chapter 65C-22 — Child Care Standards", "url": "https://www.flrules.org/gateway/ChapterHome.asp?Chapter=65C-22" },
+    { "title": "Florida DCF Background Screening", "url": "https://www.myflfamilies.com/services/background-screening" },
+    { "title": "Florida DCF Background Screening FAQ — Child Care Licensing", "url": "https://www.myflfamilies.com/services/background-screening/frequently-asked-questions-specific-child-care-licensing" },
+    { "title": "Florida Childcare Ratios — CentreCareOS", "url": "https://www.centrecareos.com/resources/ratios/florida" },
+    { "title": "Florida Staff-to-Child Ratio Requirements — ChildcareComp", "url": "https://childcarecomp.com/articles/licensing-requirements/florida-staff-child-ratio-requirements" },
+    { "title": "Florida Childcare Licensing Requirements — Brightwheel", "url": "https://mybrightwheel.com/licensing-requirements/florida/" }
+  ]
+}
