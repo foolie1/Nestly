@@ -77,21 +77,6 @@ export type Incident = {
   severity: "low" | "medium" | "high";
 };
 
-export type Message = {
-  id: string;
-  thread: string;
-  from: string;
-  fromRole: string;
-  to: string;
-  subject: string;
-  preview: string;
-  body: string;
-  timestamp: string;
-  read: boolean;
-  facilityId: string;
-  childId?: string;
-};
-
 export type LogEntry = {
   id: string;
   childId: string;
@@ -269,15 +254,6 @@ export const incidents: Incident[] = [
   { id: "i4", childName: "Ethan Brown", facilityId: "f2", date: "2026-08-22", type: "Ratio Alert", description: "Room was briefly over 1:15 ratio for 4 minutes during shift transition. Staff adjusted immediately.", reportedBy: "System (Auto-logged)", guardianNotified: false, guardianSigned: false, severity: "high" },
 ];
 
-// ─── Messages ─────────────────────────────────────────────────
-export const messages: Message[] = [
-  { id: "m1", thread: "t1", from: "Maria Torres", fromRole: "Guardian", to: "Denise Morales", subject: "Amelia pickup today", preview: "Hi Denise, my mother will be picking up Amelia today around 3:30...", body: "Hi Denise, my mother will be picking up Amelia today around 3:30. Her name is Carmen Torres and she's on the authorized pickup list. Just wanted to give you a heads-up!", timestamp: "2026-08-31 08:14", read: false, facilityId: "f1", childId: "c1" },
-  { id: "m2", thread: "t2", from: "Priya Patel", fromRole: "Guardian", to: "Office Admin", subject: "Invoice question — August", preview: "Hello, I noticed my August invoice shows a different amount than...", body: "Hello, I noticed my August invoice shows a different amount than what I expected. Could someone please review this? Thank you.", timestamp: "2026-08-30 15:42", read: false, facilityId: "f1", childId: "c2" },
-  { id: "m3", thread: "t3", from: "Gloria Sánchez", fromRole: "Teacher", to: "Office Admin", subject: "Allergy alert — Sofia Reyes", preview: "Please note Sofia has developed a new allergy to tree nuts...", body: "Please note Sofia has developed a new allergy to tree nuts per the doctor's note received today. Please update her file and flag for the kitchen.", timestamp: "2026-08-29 11:05", read: true, facilityId: "f1", childId: "c3" },
-  { id: "m4", thread: "t4", from: "Admin — Sunshine Childcare Group", fromRole: "Operator", to: "All Staff", subject: "[Broadcast] Labor Day schedule", preview: "Reminder: all three centers will be CLOSED Monday, Sept 1st...", body: "Reminder: all three centers will be CLOSED Monday, September 1st for Labor Day. Emergency contact for facility issues: (954) 555-0001.", timestamp: "2026-08-28 09:00", read: true, facilityId: "f1" },
-  { id: "m5", thread: "t5", from: "Karen Brown", fromRole: "Guardian", to: "Jade Osei", subject: "Ethan's sleep schedule update", preview: "Hi, we've been working on Ethan's nap schedule at home and...", body: "Hi, we have been working on Ethan's nap schedule at home and he is now napping from about 1pm to 2:30pm. Hoping this matches closer to the room schedule.", timestamp: "2026-08-28 07:55", read: true, facilityId: "f2", childId: "c10" },
-];
-
 // ─── Daily Logs ───────────────────────────────────────────────
 export const logEntries: LogEntry[] = [
   { id: "l1", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "08:02", type: "meal", detail: "4 oz formula, finished completely", loggedBy: "Denise Morales" },
@@ -400,37 +376,4 @@ export const feed: FeedItem[] = [
   { id: "fd11", childId: "c2", time: "10:00", type: "meal", title: "Bottle · 5 oz formula", detail: "Finished", by: "Rashida Okafor" },
   { id: "fd12", childId: "c2", time: "10:20", type: "photo", title: "Outdoor stroll ☀️", detail: "Fresh air in the shaded courtyard", by: "Denise Morales", photo: "🌳" },
   { id: "fd13", childId: "c2", time: "11:40", type: "nap", title: "Nap started", by: "Rashida Okafor" },
-];
-
-export type ParentThread = {
-  id: string;
-  childId: string;
-  /** teacher = child's classroom · office = admin-only, per Procare's pattern */
-  kind: "teacher" | "office";
-  with: string;
-  messages: { id: string; from: "me" | "them"; name: string; body: string; time: string }[];
-};
-
-export const parentThreads: ParentThread[] = [
-  {
-    id: "pt1", childId: "c1", kind: "teacher", with: "Bluebell Infants teachers",
-    messages: [
-      { id: "pm1", from: "me", name: "Maria Torres", body: "Hi Denise, my mother will be picking up Amelia today around 3:30. Her name is Carmen Torres and she's on the authorized pickup list.", time: "08:14" },
-      { id: "pm2", from: "them", name: "Denise Morales", body: "Got it, thank you Maria! We'll have her ready. Amelia's had a great morning so far 😊", time: "08:21" },
-    ],
-  },
-  {
-    id: "pt2", childId: "c1", kind: "office", with: "Coral Springs office",
-    messages: [
-      { id: "pm3", from: "them", name: "Front Office", body: "Reminder: all centers are closed Monday, Sept 1 for Labor Day.", time: "Aug 28" },
-    ],
-  },
-  {
-    id: "pt3", childId: "c2", kind: "office", with: "Coral Springs office",
-    messages: [
-      { id: "pm4", from: "me", name: "Priya Patel", body: "Hello, I noticed my August invoice shows a different amount than I expected. Could someone please review this?", time: "Aug 30" },
-      { id: "pm5", from: "them", name: "Front Office", body: "Hi Priya — looking into it now, we'll have an answer for you by tomorrow morning.", time: "Aug 30" },
-    ],
-  },
-  { id: "pt4", childId: "c2", kind: "teacher", with: "Bluebell Infants teachers", messages: [] },
 ];
