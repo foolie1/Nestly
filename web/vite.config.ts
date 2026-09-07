@@ -13,7 +13,14 @@ export default defineConfig(({ mode }) => ({
   build: { sourcemap: mode === 'development' ? 'inline' : false },
   plugins: [react(), tailwindcss(), siteSlots(siteConfiguration)],
   resolve: { alias: { '@': path.resolve(__dirname, './src') } },
-  server: { host: '0.0.0.0', port: parseInt(process.env.PORT || '5173') },
+  server: {
+    host: '0.0.0.0',
+    port: parseInt(process.env.PORT || '5173'),
+    // Files are often written into this folder by an external tool. Windows
+    // file-watch events can be missed for those, leaving the browser on a
+    // stale bundle, so poll instead.
+    watch: { usePolling: true, interval: 300 },
+  },
 }))
 
 type SiteConfig = {
