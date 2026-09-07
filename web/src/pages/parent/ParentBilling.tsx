@@ -47,7 +47,7 @@ export default function ParentBilling() {
           onClick={() => setAutopay((a) => !a)}
           className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent ${autopay ? "bg-accent" : "bg-line-strong"}`}
         >
-          <span className={`absolute top-1 w-6 h-6 rounded-full bg-white shadow transition-transform ${autopay ? "translate-x-7" : "translate-x-1"}`} />
+          <span aria-hidden className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow transition-transform duration-200 ${autopay ? "translate-x-6" : "translate-x-0"}`} />
         </button>
       </div>
 

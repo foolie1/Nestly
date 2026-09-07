@@ -1,15 +1,17 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { facilities, children, Child } from "../data";
+import { useAuth } from "../auth";
 
 type Props = { facilityId: string; roomFilter?: string };
 
 const cssVar = (name: string, fallback: string) => getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
 
-const ratioLabels: Record<string, string> = {
-  infant: "1:4 max (FL §402.305)",
-  toddler: "1:6 max (FL §402.305)",
-  preschool: "1:15 max (FL §402.305)",
-  "school-age": "1:20 max (FL §402.305)",
+/** Teachers get the number they need; admins also get the statute it comes from. */
+const ratioLabels: Record<string, { plain: string; cited: string }> = {
+  infant: { plain: "1:4 max", cited: "1:4 max (FL §402.305)" },
+  toddler: { plain: "1:6 max", cited: "1:6 max (FL §402.305)" },
+  preschool: { plain: "1:15 max", cited: "1:15 max (FL §402.305)" },
+  "school-age": { plain: "1:20 max", cited: "1:20 max (FL §402.305)" },
 };
 
 type SignatureRequest = {
@@ -27,10 +29,12 @@ function SignatureModal({
   request,
   onConfirm,
   onCancel,
+  showRegNotice,
 }: {
   request: SignatureRequest;
   onConfirm: (record: SignatureRecord) => void;
   onCancel: () => void;
+  showRegNotice: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
@@ -178,10 +182,11 @@ function SignatureModal({
             </div>
           </div>
 
-          {/* Florida notice */}
-          <div className="bg-surface-2 rounded-card p-3 text-xs text-muted">
-            <span className="font-semibold text-brand">Florida requirement:</span> Signatures must be obtained at each pick-up and drop-off and retained for a minimum of two years (Fla. Admin. Code §65C-22.001).
-          </div>
+          {showRegNotice && (
+            <div className="bg-surface-2 rounded-card p-3 text-xs text-muted">
+              <span className="font-semibold text-brand">Florida requirement:</span> Signatures must be obtained at each pick-up and drop-off and retained for a minimum of two years (Fla. Admin. Code §65C-22.001).
+            </div>
+          )}
         </div>
 
         {/* Footer */}
@@ -209,6 +214,11 @@ function SignatureModal({
 }
 
 export default function CheckIn({ facilityId, roomFilter }: Props) {
+  const { user } = useAuth();
+  // Teachers see the operational rules; the regulatory framing is for the admin side.
+  const showRegNotice = user?.role !== "staff";
+  // Ratio status is hidden from teachers for now; the over-ratio block still runs.
+  const showRatio = user?.role !== "staff";
   const facilityBase = facilities.find((f) => f.id === facilityId) ?? facilities[0];
   const facility = roomFilter ? { ...facilityBase, rooms: facilityBase.rooms.filter((r) => r.name === roomFilter) } : facilityBase;
   const facilityChildren = children.filter((c) => c.facilityId === facilityId && (!roomFilter || c.room === roomFilter));
@@ -226,12 +236,12 @@ export default function CheckIn({ facilityId, roomFilter }: Props) {
     if (!room) return;
     const isCheckedIn = childStates[child.id];
 
-    if (!isCheckedIn) {
+    // Ratio enforcement is an admin-side guard for now; teachers aren't blocked.
+    if (!isCheckedIn && showRatio) {
       const currentIn = facilityChildren.filter((c) => childStates[c.id] && c.room === room.name).length;
-      const newCount = currentIn + 1;
-      const ratio = newCount / room.staffCount;
+      const ratio = (currentIn + 1) / room.staffCount;
       if (ratio > room.ratioLimit) {
-        setAlert(`⚠ Ratio alert: ${room.name} would be at 1:${ratio.toFixed(1)} — exceeds Florida limit of 1:${room.ratioLimit}. Check-in blocked until staff is added.`);
+        setAlert(`⚠ Ratio alert: ${room.name} would be at 1:${ratio.toFixed(1)} — over the 1:${room.ratioLimit} limit for this room. Check-in blocked until another staff member is added.`);
         return;
       }
     }
@@ -304,10 +314,15 @@ export default function CheckIn({ facilityId, roomFilter }: Props) {
           <div key={room.id} className="mb-6">
             <div className="flex items-center gap-3 mb-3">
               <h2 className="font-bold text-lg text-brand">{room.name}</h2>
-              <span className="text-xs text-muted font-mono">{ratioLabels[room.ageGroup]}</span>
-              <span className={`ml-auto font-mono text-sm font-bold px-3 py-1 rounded-ctl ${over ? "bg-danger-soft text-danger" : "bg-success-soft text-success"}`}>
-                {over ? "⚠ " : ""}Live ratio 1:{ratio > 0 ? ratio.toFixed(1) : "—"} · {room.staffCount} staff on duty
-              </span>
+              {showRatio && (
+                <>
+                  <span className="text-xs text-muted font-mono">{ratioLabels[room.ageGroup]?.cited}</span>
+                  <span className={`ml-auto font-mono text-sm font-bold px-3 py-1 rounded-ctl ${over ? "bg-danger-soft text-danger" : "bg-success-soft text-success"}`}>
+                    {over ? "⚠ " : ""}Live ratio 1:{ratio > 0 ? ratio.toFixed(1) : "—"} · {room.staffCount} staff on duty
+                  </span>
+                </>
+              )}
+              <span className="ml-auto text-xs font-mono text-muted">{inCount} of {roomChildren.length} in</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {roomChildren.map((child) => {
@@ -322,7 +337,7 @@ export default function CheckIn({ facilityId, roomFilter }: Props) {
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {child.immunizationStatus === "missing" && (
-                          <span className="text-xs bg-danger-soft text-danger px-2 py-0.5 rounded font-medium">DH 680</span>
+                          <span className="text-xs bg-danger-soft text-danger px-2 py-0.5 rounded font-medium">{showRegNotice ? "DH 680" : "Immunization"}</span>
                         )}
                         {child.immunizationStatus === "expires-soon" && (
                           <span className="text-xs bg-warning-soft text-warning px-2 py-0.5 rounded font-medium">Expires soon</span>
@@ -368,19 +383,22 @@ export default function CheckIn({ facilityId, roomFilter }: Props) {
         );
       })}
 
-      <div className="mt-8 bg-surface-2 border border-line rounded-card p-4 flex gap-3">
-        <span className="text-accent text-lg">ℹ</span>
-        <div className="text-xs text-muted">
-          <p className="font-semibold text-brand mb-0.5">Florida Signature &amp; Ratio Rules</p>
-          <p>A signature is required at every check-in and check-out and must be retained for two years (Fla. Admin. Code §65C-22.001). Ratio limits per FL Statute §402.305 apply at all times — check-in is blocked when adding a child would breach the room limit.</p>
+      {showRegNotice && (
+        <div className="mt-8 bg-surface-2 border border-line rounded-card p-4 flex gap-3">
+          <span className="text-accent text-lg">ℹ</span>
+          <div className="text-xs text-muted">
+            <p className="font-semibold text-brand mb-0.5">Florida Signature &amp; Ratio Rules</p>
+            <p>A signature is required at every check-in and check-out and must be retained for two years (Fla. Admin. Code §65C-22.001). Ratio limits per FL Statute §402.305 apply at all times — check-in is blocked when adding a child would breach the room limit.</p>
+          </div>
         </div>
-      </div>
+      )}
 
       {signatureRequest && (
         <SignatureModal
           request={signatureRequest}
           onConfirm={handleSignatureConfirm}
           onCancel={() => setSignatureRequest(null)}
+          showRegNotice={showRegNotice}
         />
       )}
     </div>

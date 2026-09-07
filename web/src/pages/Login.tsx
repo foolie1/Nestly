@@ -16,10 +16,10 @@ import { ADMIN_ROLES, demoUsers, facilities, type LoginRole as Role, type Role a
 import { loginRoleOf, useAuth } from "../auth";
 import { ThemePicker } from "../theme";
 
-const ROLES: { id: Role; label: string; blurb: string; Icon: typeof Baby; accent: string }[] = [
-  { id: "parent", label: "Parent", blurb: "See your child's day, pay tuition, message teachers", Icon: Baby, accent: "bg-accent-soft text-accent" },
-  { id: "staff", label: "Staff", blurb: "Check kids in, log activities, message families", Icon: GraduationCap, accent: "bg-warning-soft text-warning" },
-  { id: "admin", label: "Owner / Admin", blurb: "Owners, center directors, and office admins", Icon: Building2, accent: "bg-brand-soft text-brand" },
+const ROLES: { id: Role; label: string; Icon: typeof Baby; accent: string }[] = [
+  { id: "parent", label: "Parent", Icon: Baby, accent: "bg-accent-soft text-accent" },
+  { id: "staff", label: "Staff", Icon: GraduationCap, accent: "bg-warning-soft text-warning" },
+  { id: "admin", label: "Owner / Admin", Icon: Building2, accent: "bg-brand-soft text-brand" },
 ];
 
 const inputCls =
@@ -63,19 +63,16 @@ function RolePicker({ onPick }: { onPick: (r: Role) => void }) {
       <h1 className="text-2xl sm:text-3xl font-bold text-brand text-center">Welcome</h1>
       <p className="text-muted text-center mt-2 mb-8">Who's signing in today?</p>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {ROLES.map(({ id, label, blurb, Icon, accent }) => (
+        {ROLES.map(({ id, label, Icon, accent }) => (
           <button
             key={id}
             onClick={() => onPick(id)}
-            className="group bg-white border-2 border-line rounded-[calc(var(--t-radius)+0.25rem)] p-6 text-left hover:border-accent hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-all min-h-[140px] flex md:flex-col items-center md:items-start gap-4"
+            className="group bg-surface border-2 border-line rounded-[calc(var(--t-radius)+0.25rem)] p-6 hover:border-accent hover:shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-all min-h-[112px] flex md:flex-col md:justify-center items-center gap-4 md:gap-3"
           >
             <div className={`w-14 h-14 rounded-[calc(var(--t-radius)+0.25rem)] flex items-center justify-center flex-shrink-0 ${accent}`}>
               <Icon size={28} strokeWidth={2} aria-hidden />
             </div>
-            <div>
-              <p className="font-bold text-lg text-brand group-hover:text-accent transition-colors">{label}</p>
-              <p className="text-sm text-muted mt-1">{blurb}</p>
-            </div>
+            <p className="font-bold text-lg text-brand group-hover:text-accent transition-colors">{label}</p>
           </button>
         ))}
       </div>

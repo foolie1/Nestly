@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AlertTriangle, Baby, BedDouble, Camera, CalendarCheck, Check, ClipboardList, MessageSquare, Smile, Utensils, X, type LucideIcon } from "lucide-react";
-import { children, facilities, logEntries, staff } from "../../data";
+import { children, facilities, staff } from "../../data";
+import { useLogs, type LogType } from "../../logs";
 import { useAuth } from "../../auth";
 
 type Props = { onNav: (page: string) => void };
@@ -21,17 +22,27 @@ export default function MyRoom({ onNav }: Props) {
   const kids = children.filter((c) => c.facilityId === facility.id && c.room === room.name);
   const present = kids.filter((c) => c.checkedIn);
   const roomStaff = staff.filter((s) => s.facilityId === facility.id && s.room === room.name);
-  const recent = logEntries.filter((l) => l.facilityId === facility.id && l.room === room.name).sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 5);
-  const ratio = roomStaff.length ? present.length / roomStaff.length : 0;
-  const over = ratio > room.ratioLimit;
+  const { entries, addEntries } = useLogs();
+  const recent = entries.filter((l) => l.facilityId === facility.id && l.room === room.name).sort((a, b) => b.timestamp.localeCompare(a.timestamp)).slice(0, 5);
   const [quick, setQuick] = useState<{ type: string; selected: string[] } | null>(null);
+  const [chip, setChip] = useState("");
+  const [note, setNote] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const firstName = user?.name.split(" ")[0];
 
   const submitQuick = () => {
     if (!quick) return;
-    setToast(`${QUICK.find((q) => q.id === quick.type)?.label} logged for ${quick.selected.length} ${quick.selected.length === 1 ? "child" : "children"}`);
+    const label = QUICK.find((q) => q.id === quick.type)?.label ?? "Entry";
+    const detail = [chip, note.trim()].filter(Boolean).join(" — ") || label;
+    // "photo" and "mood" aren't log types in the data model; they file as notes.
+    const type: LogType = (["meal", "nap", "diaper", "bathroom", "incident"] as const).includes(quick.type as never)
+      ? (quick.type as LogType)
+      : "note";
+    const n = addEntries({ childIds: quick.selected, type, detail });
+    setToast(`${label} logged for ${n} ${n === 1 ? "child" : "children"}`);
     setQuick(null);
+    setChip("");
+    setNote("");
     setTimeout(() => setToast(null), 2500);
   };
 
@@ -43,22 +54,17 @@ export default function MyRoom({ onNav }: Props) {
         <p className="text-muted mt-0.5">{facility.name} · Monday, Aug 31</p>
       </div>
 
-      {/* Ratio + presence */}
-      <div className="grid grid-cols-3 gap-3 mb-5">
-        <div className="bg-white border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4 col-span-2 sm:col-span-1">
-          <p className="text-xs font-mono uppercase tracking-widest text-muted">Live ratio</p>
-          <p className={`text-3xl font-bold mt-1 ${over ? "text-danger" : "text-success"}`}>1:{ratio.toFixed(1)}</p>
-          <p className="text-xs text-muted mt-1">FL max 1:{room.ratioLimit} · {roomStaff.length} staff on</p>
-        </div>
-        <div className="bg-white border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4">
+      {/* Today at a glance */}
+      <div className="grid grid-cols-2 gap-3 mb-5">
+        <div className="bg-surface border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4">
           <p className="text-xs font-mono uppercase tracking-widest text-muted">Present</p>
           <p className="text-3xl font-bold text-brand mt-1">{present.length}</p>
-          <p className="text-xs text-muted mt-1">of {kids.length} enrolled</p>
+          <p className="text-xs text-muted mt-1">of {kids.length} enrolled · {roomStaff.length} staff on</p>
         </div>
-        <div className="bg-white border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4 hidden sm:block">
+        <div className="bg-surface border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4">
           <p className="text-xs font-mono uppercase tracking-widest text-muted">Flags</p>
           <p className="text-3xl font-bold text-warning mt-1">{kids.filter((k) => k.immunizationStatus !== "current").length}</p>
-          <p className="text-xs text-muted mt-1">DH 680 issues</p>
+          <p className="text-xs text-muted mt-1">Immunization records</p>
         </div>
       </div>
 
@@ -67,7 +73,7 @@ export default function MyRoom({ onNav }: Props) {
         <h2 id="quick-h" className="font-semibold text-brand mb-3">Quick log</h2>
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
           {QUICK.map((q) => (
-            <button key={q.id} onClick={() => setQuick({ type: q.id, selected: [] })} className={`rounded-[calc(var(--t-radius)+0.25rem)] p-3 sm:p-4 flex flex-col items-center gap-2 min-h-20 ${q.bg} ${q.fg} hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition`}>
+            <button key={q.id} onClick={() => { setQuick({ type: q.id, selected: [] }); setChip(""); setNote(""); }} className={`rounded-[calc(var(--t-radius)+0.25rem)] p-3 sm:p-4 flex flex-col items-center gap-2 min-h-20 ${q.bg} ${q.fg} hover:brightness-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition`}>
               <q.Icon size={26} aria-hidden />
               <span className="text-sm font-semibold">{q.label}</span>
             </button>
@@ -87,7 +93,7 @@ export default function MyRoom({ onNav }: Props) {
               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${k.checkedIn ? "bg-accent-soft text-accent" : "bg-surface-2 text-muted"}`}>{k.name.split(" ").map((n) => n[0]).join("")}</div>
               <div className="min-w-0">
                 <p className="font-semibold text-sm text-brand truncate">{k.name}</p>
-                <p className="text-xs text-muted">{k.checkedIn ? "Present" : "Not in yet"}{k.immunizationStatus === "missing" ? " · DH 680 ⚠" : ""}</p>
+                <p className="text-xs text-muted">{k.checkedIn ? "Present" : "Not in yet"}{k.immunizationStatus === "missing" ? " · immunization ⚠" : ""}</p>
               </div>
             </li>
           ))}
@@ -145,15 +151,16 @@ export default function MyRoom({ onNav }: Props) {
                 );
               })}
             </div>
-            {quick.type === "meal" && <Chips label="What" options={["Bottle 4 oz", "Bottle 6 oz", "Breakfast", "Lunch", "Snack"]} />}
-            {quick.type === "nap" && <Chips label="Nap" options={["Started", "Woke up"]} />}
-            {quick.type === "diaper" && <Chips label="Type" options={["Wet", "BM", "Dry", "Cream applied"]} />}
-            {quick.type === "mood" && <Chips label="Mood" options={["Happy", "Calm", "Fussy", "Tired", "Playful"]} />}
+            {quick.type === "meal" && <Chips label="What" options={["Bottle 4 oz", "Bottle 6 oz", "Breakfast", "Lunch", "Snack"]} value={chip} onChange={setChip} />}
+            {quick.type === "nap" && <Chips label="Nap" options={["Started", "Woke up"]} value={chip} onChange={setChip} />}
+            {quick.type === "diaper" && <Chips label="Type" options={["Wet", "BM", "Dry", "Cream applied"]} value={chip} onChange={setChip} />}
+            {quick.type === "mood" && <Chips label="Mood" options={["Happy", "Calm", "Fussy", "Tired", "Playful"]} value={chip} onChange={setChip} />}
+            {quick.type === "photo" && <Chips label="Moment" options={["Playtime", "Art", "Outdoors", "Mealtime", "Nap"]} value={chip} onChange={setChip} />}
             {quick.type === "incident" && (
-              <div className="bg-warning-soft border border-warning-line rounded-card p-3 text-xs text-warning-strong mb-4">Incidents open the full Florida incident form (required fields, guardian notification, signatures). Select one child.</div>
+              <div className="bg-warning-soft border border-warning-line rounded-card p-3 text-xs text-warning-strong mb-4">Incidents open the full incident form — required fields, guardian notification and signatures. Select one child.</div>
             )}
             <label htmlFor="ql-note" className="text-xs font-mono uppercase tracking-widest text-muted block mb-1.5">Note (optional)</label>
-            <textarea id="ql-note" rows={2} placeholder="Anything to add…" className="w-full border border-line rounded-card px-3 py-2 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-accent resize-none mb-4" />
+            <textarea id="ql-note" rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Anything to add…" className="w-full border border-line rounded-card px-3 py-2 text-base focus:outline-none focus-visible:ring-2 focus-visible:ring-accent resize-none mb-4" />
             <button onClick={submitQuick} disabled={quick.selected.length === 0} className="w-full min-h-12 rounded-card bg-brand text-white font-semibold hover:bg-brand-hover disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent">
               Save {quick.selected.length > 0 ? `for ${quick.selected.length}` : ""}
             </button>
@@ -170,8 +177,9 @@ export default function MyRoom({ onNav }: Props) {
   );
 }
 
-function Chips({ label, options }: { label: string; options: string[] }) {
-  const [v, setV] = useState(options[0]);
+function Chips({ label, options, value, onChange }: { label: string; options: string[]; value: string; onChange: (v: string) => void }) {
+  const v = value || options[0];
+  const setV = onChange;
   return (
     <div className="mb-4">
       <p className="text-xs font-mono uppercase tracking-widest text-muted mb-1.5">{label}</p>
