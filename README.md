@@ -18,10 +18,11 @@ npm run dev        # http://localhost:5173
 npm run build      # production bundle in web/dist
 ```
 
-## Live demo (GitHub Pages)
+## Live demo (Vercel)
 
-Pushing to `main` builds `web/` and deploys it to **https://foolie1.github.io/Nestly/** via `.github/workflows/deploy-web.yml`.
-One-time setup after the first push: repo **Settings → Pages → Source: GitHub Actions**.
+The repo is private, so it's hosted on Vercel (free tier supports private repos):
+project imported from GitHub with **Root Directory = `web`**, framework Vite.
+Every push to `main` redeploys automatically.
 
 ## Demo accounts
 
