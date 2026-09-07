@@ -38,6 +38,7 @@ The login page has one-click demo buttons for each role. To type them in:
 | Parent | maria.torres@email.com | demo1234 |
 | Parent | priya.patel@email.com | demo1234 |
 | Parent first-time setup | family code `4471-2290-58` | — |
+| Staff first-time PIN setup | denise@sunshinechildcare.com + invite code `CS-4471` | — |
 
 Auth is in-memory (`web/src/auth.tsx`) — swapping in a real backend means replacing `signIn` / `signInAs` there.
 

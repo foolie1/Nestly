@@ -320,6 +320,8 @@ export type DemoUser = {
   childIds?: string[];
   /** parent only — 10-digit family code for first-time setup */
   familyCode?: string;
+  /** staff only — invite code from the director, used once to create a PIN */
+  inviteCode?: string;
   initials: string;
 };
 
@@ -327,8 +329,8 @@ export const demoUsers: DemoUser[] = [
   { id: "u-admin", role: "owner", name: "Gene Oglesby", email: "gene@sunshinechildcare.com", secret: "demo1234", title: "Owner / Operator", facilityId: "f1", initials: "GO" },
   { id: "u-director", role: "director", name: "Patricia Lane", email: "patricia@sunshinechildcare.com", secret: "demo1234", title: "Center Director · Coral Springs", facilityId: "f1", initials: "PL" },
   { id: "u-office", role: "office_admin", name: "Kevin Brooks", email: "kevin@sunshinechildcare.com", secret: "demo1234", title: "Office Admin · Boca Raton", facilityId: "f2", initials: "KB" },
-  { id: "u-staff", role: "staff", name: "Denise Morales", email: "denise@sunshinechildcare.com", secret: "2468", title: "Lead Teacher · Bluebell Infants", facilityId: "f1", room: "Bluebell Infants", staffId: "s1", initials: "DM" },
-  { id: "u-staff2", role: "staff", name: "Gloria Sánchez", email: "gloria@sunshinechildcare.com", secret: "1357", title: "Lead Teacher · Sunflower Toddlers", facilityId: "f1", room: "Sunflower Toddlers", staffId: "s3", initials: "GS" },
+  { id: "u-staff", role: "staff", name: "Denise Morales", email: "denise@sunshinechildcare.com", secret: "2468", title: "Lead Teacher · Bluebell Infants", facilityId: "f1", room: "Bluebell Infants", staffId: "s1", inviteCode: "CS-4471", initials: "DM" },
+  { id: "u-staff2", role: "staff", name: "Gloria Sánchez", email: "gloria@sunshinechildcare.com", secret: "1357", title: "Lead Teacher · Sunflower Toddlers", facilityId: "f1", room: "Sunflower Toddlers", staffId: "s3", inviteCode: "CS-8813", initials: "GS" },
   { id: "u-parent", role: "parent", name: "Maria Torres", email: "maria.torres@email.com", secret: "demo1234", title: "Parent of Amelia", facilityId: "f1", childIds: ["c1"], familyCode: "4471-2290-58", initials: "MT" },
   { id: "u-parent2", role: "parent", name: "Priya Patel", email: "priya.patel@email.com", secret: "demo1234", title: "Parent of Noah", facilityId: "f1", childIds: ["c2"], familyCode: "8813-0042-71", initials: "PP" },
 ];

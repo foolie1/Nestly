@@ -219,15 +219,43 @@ function AdminForm() {
 }
 
 // ─── Staff: email + 4-digit PIN (kiosk-friendly keypad) ──────
+function PinPad({ value, onChange, disabled, label }: { value: string; onChange: (v: string) => void; disabled?: boolean; label: string }) {
+  const push = (d: string) => value.length < 4 && onChange(value + d);
+  return (
+    <div>
+      <p className={labelCls}>{label}</p>
+      <div className="flex gap-3 justify-center mb-4" aria-live="polite" aria-label={`${value.length} of 4 digits entered`}>
+        {[0, 1, 2, 3].map((i) => (
+          <span key={i} className={`w-4 h-4 rounded-full border-2 transition-colors ${i < value.length ? "bg-[#1e2d4e] border-[#1e2d4e]" : "border-[#c9c5bc]"}`} />
+        ))}
+      </div>
+      <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
+        {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
+          <KeypadBtn key={d} onClick={() => push(d)} disabled={disabled}>{d}</KeypadBtn>
+        ))}
+        <KeypadBtn onClick={() => onChange("")} disabled={disabled} aria-label="Clear"><span className="text-sm font-medium">Clear</span></KeypadBtn>
+        <KeypadBtn onClick={() => push("0")} disabled={disabled}>0</KeypadBtn>
+        <KeypadBtn onClick={() => onChange(value.slice(0, -1))} disabled={disabled} aria-label="Delete last digit"><Delete size={20} aria-hidden /></KeypadBtn>
+      </div>
+    </div>
+  );
+}
+
 function StaffForm() {
-  const { signIn } = useAuth();
+  const { signIn, setStaffPin, findStaffInvite } = useAuth();
+  const [mode, setMode] = useState<"signin" | "setup">("signin");
   const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  const push = (d: string) => {
-    if (pin.length >= 4) return;
-    const next = pin + d;
+  // first-time setup
+  const [step, setStep] = useState(1);
+  const [invite, setInvite] = useState("");
+  const [newPin, setNewPin] = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const inviteOk = !!findStaffInvite(email, invite);
+
+  const handleSignInPin = (next: string) => {
     setPin(next);
     setError(null);
     if (next.length === 4) {
@@ -236,32 +264,101 @@ function StaffForm() {
     }
   };
 
+  const handleConfirmPin = (next: string) => {
+    setConfirmPin(next);
+    setError(null);
+    if (next.length === 4) {
+      if (next !== newPin) { setError("PINs don't match — try again."); setTimeout(() => setConfirmPin(""), 350); return; }
+      const r = setStaffPin(email, invite, next);
+      if (!r.ok) { setError(r.error); setStep(2); setNewPin(""); setConfirmPin(""); }
+    }
+  };
+
+  const reset = () => { setMode("signin"); setStep(1); setInvite(""); setNewPin(""); setConfirmPin(""); setPin(""); setError(null); };
+
+  if (mode === "setup") {
+    return (
+      <div className="space-y-5">
+        <div className="flex items-center gap-2 text-xs font-mono text-[#6b6860]">
+          {[1, 2, 3].map((n) => (
+            <span key={n} className="flex items-center gap-2">
+              <span className={`w-6 h-6 rounded-full flex items-center justify-center font-bold ${step >= n ? "bg-[#0f7173] text-white" : "bg-[#e2dfd8] text-[#6b6860]"}`}>{step > n ? <Check size={14} aria-hidden /> : n}</span>
+              {n < 3 && <span className="w-6 h-px bg-[#e2dfd8]" />}
+            </span>
+          ))}
+          <span className="ml-1">Step {step} of 3</span>
+        </div>
+
+        {step === 1 && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-semibold text-[#1e2d4e]">Find your invite</h2>
+              <p className="text-sm text-[#6b6860] mt-1">Your director added you to Nestly and gave you an invite code. Enter it with your work email.</p>
+            </div>
+            <div>
+              <label htmlFor="su-email" className={labelCls}>Staff email</label>
+              <input id="su-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@yourcenter.com" className={inputCls} />
+            </div>
+            <div>
+              <label htmlFor="su-invite" className={labelCls}>Invite code</label>
+              <input id="su-invite" value={invite} onChange={(e) => setInvite(e.target.value)} placeholder="CS-0000" className={`${inputCls} font-mono tracking-widest uppercase`} />
+              {invite.length >= 6 && email && !inviteOk && <p className="text-sm text-[#dc2626] mt-1.5">No invite found for that email and code.</p>}
+              {inviteOk && <p className="text-sm text-[#16a34a] mt-1.5 flex items-center gap-1"><Check size={16} aria-hidden /> Found: {findStaffInvite(email, invite)?.title}</p>}
+            </div>
+            <button className={primaryBtn} disabled={!inviteOk} onClick={() => setStep(2)}>Continue</button>
+            <p className="text-xs text-[#6b6860] text-center font-mono">Demo: denise@sunshinechildcare.com · CS-4471</p>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-semibold text-[#1e2d4e]">Choose your PIN</h2>
+              <p className="text-sm text-[#6b6860] mt-1">4 digits. You'll use it on the classroom tablet, so pick something you can tap fast but others can't guess.</p>
+            </div>
+            <PinPad label="New PIN" value={newPin} onChange={(v) => { setNewPin(v); setError(null); }} />
+            {error && <ErrorBox msg={error} />}
+            <div className="flex gap-3">
+              <button className="flex-1 min-h-12 rounded-xl border border-[#e2dfd8] text-[#6b6860] hover:border-[#1e2d4e] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173]" onClick={() => setStep(1)}>Back</button>
+              <button className={`${primaryBtn} flex-1`} disabled={newPin.length !== 4} onClick={() => { setStep(3); setConfirmPin(""); }}>Continue</button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="space-y-4">
+            <div>
+              <h2 className="font-semibold text-[#1e2d4e]">Confirm your PIN</h2>
+              <p className="text-sm text-[#6b6860] mt-1">Enter it once more. You'll be signed in as soon as it matches.</p>
+            </div>
+            <PinPad label="Confirm PIN" value={confirmPin} onChange={handleConfirmPin} />
+            {error && <ErrorBox msg={error} />}
+            <button className="w-full min-h-11 text-sm text-[#6b6860] hover:text-[#1e2d4e] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] rounded-lg" onClick={() => { setStep(2); setNewPin(""); setConfirmPin(""); setError(null); }}>Start over</button>
+          </div>
+        )}
+
+        <button type="button" onClick={reset} className="w-full text-sm text-[#6b6860] hover:text-[#1e2d4e] min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0f7173] rounded-lg">
+          Already have a PIN? Sign in
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div>
         <label htmlFor="staff-email" className={labelCls}>Staff email</label>
         <input id="staff-email" type="email" autoComplete="email" value={email} onChange={(e) => { setEmail(e.target.value); setError(null); }} placeholder="you@yourcenter.com" className={inputCls} />
       </div>
-      <div>
-        <p className={labelCls}>4-digit PIN</p>
-        <div className="flex gap-3 justify-center mb-4" aria-live="polite" aria-label={`${pin.length} of 4 digits entered`}>
-          {[0, 1, 2, 3].map((i) => (
-            <span key={i} className={`w-4 h-4 rounded-full border-2 transition-colors ${i < pin.length ? "bg-[#1e2d4e] border-[#1e2d4e]" : "border-[#c9c5bc]"}`} />
-          ))}
-        </div>
-        <div className="grid grid-cols-3 gap-2 max-w-xs mx-auto">
-          {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (
-            <KeypadBtn key={d} onClick={() => push(d)} disabled={!email}>{d}</KeypadBtn>
-          ))}
-          <KeypadBtn onClick={() => setPin("")} disabled={!email} aria-label="Clear"><span className="text-sm font-medium">Clear</span></KeypadBtn>
-          <KeypadBtn onClick={() => push("0")} disabled={!email}>0</KeypadBtn>
-          <KeypadBtn onClick={() => setPin((p) => p.slice(0, -1))} disabled={!email} aria-label="Delete last digit"><Delete size={20} aria-hidden /></KeypadBtn>
-        </div>
-      </div>
+      <PinPad label="4-digit PIN" value={pin} onChange={handleSignInPin} disabled={!email} />
       {error && <ErrorBox msg={error} />}
       <p className="text-xs text-[#6b6860] text-center flex items-center justify-center gap-1.5">
-        <KeyRound size={14} aria-hidden /> PINs are set by your center director. Works on the classroom tablet too.
+        <KeyRound size={14} aria-hidden /> Works on the classroom tablet too.
       </p>
+      <div className="relative py-1"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-[#e2dfd8]" /></div><p className="relative text-center text-xs text-[#6b6860]"><span className="bg-white px-2">First day?</span></p></div>
+      <button type="button" onClick={() => { setMode("setup"); setError(null); setPin(""); }} className="w-full min-h-12 rounded-xl border-2 border-[#0f7173] text-[#0f7173] font-semibold hover:bg-[#e8f4f4] focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#0f7173] transition-colors">
+        Create my PIN
+      </button>
     </div>
   );
 }
