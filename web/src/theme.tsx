@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { Palette } from "lucide-react";
 
-export type ThemeId = "classic" | "sky" | "sunrise";
+export type ThemeId = "classic" | "sky" | "sunrise" | "night";
 export const THEMES: { id: ThemeId; label: string; blurb: string; swatch: [string, string, string] }[] = [
   { id: "classic", label: "Classic", blurb: "Navy sidebar, teal accent", swatch: ["#1e2d4e", "#0f7173", "#f3f2ee"] },
   { id: "sky", label: "Sky", blurb: "Light shell, blue accent", swatch: ["#ffffff", "#1d4ed8", "#0ea5e9"] },
   { id: "sunrise", label: "Sunrise", blurb: "Warm shell, coral accent", swatch: ["#fffdf9", "#0f766e", "#f97316"] },
+  { id: "night", label: "Night", blurb: "Dark shell, easy on the eyes", swatch: ["#0b1220", "#60a5fa", "#38bdf8"] },
 ];
 
 const KEY = "nestly.theme";

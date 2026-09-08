@@ -24,7 +24,7 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
           { label: "Avg Compliance", value: `${avgCompliance}%`, sub: "Florida rule pack", color: avgCompliance >= 95 ? "text-success" : "text-warning" },
           { label: "Open Incidents", value: "4", sub: "2 require signatures", color: "text-danger" },
         ].map((k) => (
-          <div key={k.label} className="bg-white border border-line rounded-card p-5">
+          <div key={k.label} className="bg-surface border border-line rounded-card p-5">
             <p className="text-xs font-mono uppercase tracking-widest text-muted mb-2">{k.label}</p>
             <p className={`text-3xl font-bold ${k.color}`}>{k.value}</p>
             <p className="text-xs text-muted mt-1">{k.sub}</p>
@@ -78,7 +78,7 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
 
       {/* Compliance Alerts + Room Ratios side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-6">
-        <div className="bg-white border border-line rounded-card overflow-hidden">
+        <div className="bg-surface border border-line rounded-card overflow-hidden">
           <div className="px-6 py-4 border-b border-line">
             <h2 className="font-semibold text-brand">Compliance Alerts</h2>
           </div>
@@ -101,7 +101,7 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
           </div>
         </div>
 
-        <div className="bg-white border border-line rounded-card overflow-hidden">
+        <div className="bg-surface border border-line rounded-card overflow-hidden">
           <div className="px-6 py-4 border-b border-line">
             <h2 className="font-semibold text-brand">Live Ratios — All Centers</h2>
           </div>

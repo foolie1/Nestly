@@ -133,6 +133,77 @@
   --t-radius-sm: 0.875rem;
 }
 
+/* Dark shell for evening and low-light use */
+[data-theme='night'] {
+  --t-brand: #60a5fa;
+  --t-brand-hover: #93c5fd;
+  --t-brand-soft: #1e3a5f;
+  --t-accent: #38bdf8;
+  --t-accent-hover: #7dd3fc;
+  --t-accent-soft: #0e2b3d;
+  --t-accent-ink: #7dd3fc;
+
+  --t-page: #0b1220;
+  --t-surface: #161c28;
+  --t-surface-2: #1e2634;
+  --t-row-hover: #1c2432;
+  --t-line: #2a3444;
+  --t-line-strong: #3d4a5c;
+
+  --t-ink: #e6ebf2;
+  --t-muted: #9aa7b8;
+
+  --t-side-bg: #0f1622;
+  --t-side-fg: #e6ebf2;
+  --t-side-muted: #9aa7b8;
+  --t-side-faint: #6b7889;
+  --t-side-line: #232d3c;
+  --t-side-active: #1e3a5f;
+  --t-side-hover: #1a2331;
+  --t-side-logo: #38bdf8;
+
+  --t-success: #4ade80;
+  --t-success-soft: #14351f;
+  --t-warning: #fbbf24;
+  --t-warning-strong: #fcd34d;
+  --t-warning-soft: #3a2c0c;
+  --t-warning-line: #6b5310;
+  --t-danger: #f87171;
+  --t-danger-strong: #fca5a5;
+  --t-danger-soft: #3d1a1a;
+  --t-danger-line: #7f2d2d;
+  --t-info: #7dd3fc;
+  --t-info-soft: #12304a;
+  --t-purple: #c4b5fd;
+  --t-purple-soft: #2a2244;
+  --t-pink: #f9a8d4;
+  --t-pink-soft: #3d1f31;
+  --t-slate: #cbd5e1;
+  --t-slate-soft: #263041;
+
+  /* Fills are light in this theme, so anything sitting on one needs dark ink. */
+  --t-on-fill: #0b1220;
+
+  --t-radius: 1.25rem;
+  --t-radius-sm: 0.875rem;
+}
+
+/*
+ * Buttons and bubbles are written as `bg-brand text-white` etc, which is right
+ * on the light themes. In night mode those fills are light, so white-on-light
+ * would fail contrast — flip the ink instead of rewriting every call site.
+ */
+[data-theme='night'] .bg-brand,
+[data-theme='night'] .bg-brand-hover,
+[data-theme='night'] .bg-accent,
+[data-theme='night'] .bg-accent-hover,
+[data-theme='night'] .bg-success,
+[data-theme='night'] .bg-warning,
+[data-theme='night'] .bg-danger,
+[data-theme='night'] .bg-side-logo {
+  color: var(--t-on-fill);
+}
+
 @theme inline {
   --color-brand: var(--t-brand);
   --color-brand-hover: var(--t-brand-hover);

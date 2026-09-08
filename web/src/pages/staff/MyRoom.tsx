@@ -91,7 +91,7 @@ export default function MyRoom({ onNav }: Props) {
         </div>
         <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {kids.map((k) => (
-            <li key={k.id} className={`bg-white border rounded-[calc(var(--t-radius)+0.25rem)] p-3.5 flex items-center gap-3 ${k.checkedIn ? "border-accent/40" : "border-line opacity-70"}`}>
+            <li key={k.id} className={`bg-surface border rounded-[calc(var(--t-radius)+0.25rem)] p-3.5 flex items-center gap-3 ${k.checkedIn ? "border-accent/40" : "border-line opacity-70"}`}>
               <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${k.checkedIn ? "bg-accent-soft text-accent" : "bg-surface-2 text-muted"}`}>{k.name.split(" ").map((n) => n[0]).join("")}</div>
               <div className="min-w-0">
                 <p className="font-semibold text-sm text-brand truncate">{k.name}</p>
@@ -104,7 +104,7 @@ export default function MyRoom({ onNav }: Props) {
 
       {/* Recent + shortcuts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <section aria-labelledby="recent-h" className="bg-white border border-line rounded-[calc(var(--t-radius)+0.25rem)] overflow-hidden">
+        <section aria-labelledby="recent-h" className="bg-surface border border-line rounded-[calc(var(--t-radius)+0.25rem)] overflow-hidden">
           <div className="px-4 py-3 border-b border-line flex items-center justify-between">
             <h2 id="recent-h" className="font-semibold text-brand">Recent in this room</h2>
             <button onClick={() => onNav("logs")} className="text-xs font-medium text-accent min-h-9 px-2 rounded hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">All logs →</button>
@@ -122,7 +122,7 @@ export default function MyRoom({ onNav }: Props) {
           <button onClick={() => onNav("messaging")} className="bg-brand text-white rounded-[calc(var(--t-radius)+0.25rem)] p-4 flex flex-col items-start gap-2 min-h-24 hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent">
             <MessageSquare size={24} aria-hidden /><span className="font-semibold">Message families</span><span className="text-xs text-white/60">2 unread</span>
           </button>
-          <button onClick={() => onNav("logs")} className="bg-white border border-line text-brand rounded-[calc(var(--t-radius)+0.25rem)] p-4 flex flex-col items-start gap-2 min-h-24 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+          <button onClick={() => onNav("logs")} className="bg-surface border border-line text-brand rounded-[calc(var(--t-radius)+0.25rem)] p-4 flex flex-col items-start gap-2 min-h-24 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
             <ClipboardList size={24} className="text-accent" aria-hidden /><span className="font-semibold">Daily logs</span><span className="text-xs text-muted">Reports go out at 5pm</span>
           </button>
         </div>
@@ -131,7 +131,7 @@ export default function MyRoom({ onNav }: Props) {
       {/* Quick-log sheet */}
       {quick && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center" onClick={() => setQuick(null)}>
-          <div role="dialog" aria-modal="true" aria-labelledby="ql-title" className="bg-white rounded-t-[calc(var(--t-radius)+0.5rem)] sm:rounded-[calc(var(--t-radius)+0.25rem)] shadow-2xl w-full sm:max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-labelledby="ql-title" className="bg-surface rounded-t-[calc(var(--t-radius)+0.5rem)] sm:rounded-[calc(var(--t-radius)+0.25rem)] shadow-2xl w-full sm:max-w-lg p-5 sm:p-6 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 id="ql-title" className="text-lg font-bold text-brand">Log {QUICK.find((q) => q.id === quick.type)?.label.toLowerCase()}</h2>
               <button onClick={() => setQuick(null)} aria-label="Close" className="w-10 h-10 flex items-center justify-center rounded-ctl text-muted hover:text-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"><X size={20} aria-hidden /></button>

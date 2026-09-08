@@ -26,7 +26,7 @@ export default function Staff({ facilityId }: Props) {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-line p-1 rounded-ctl w-fit">
         {(["schedule", "certifications"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-ctl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent capitalize ${tab === t ? "bg-white text-brand shadow-sm" : "text-muted hover:text-brand"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-ctl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent capitalize ${tab === t ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-brand"}`}>
             {t === "schedule" ? "Weekly Schedule" : "Certifications"}
           </button>
         ))}
@@ -35,7 +35,7 @@ export default function Staff({ facilityId }: Props) {
       {tab === "schedule" && (
         <>
           {/* Weekly grid */}
-          <div className="bg-white border border-line rounded-card overflow-x-auto mb-6">
+          <div className="bg-surface border border-line rounded-card overflow-x-auto mb-6">
             <div className="min-w-[760px] grid grid-cols-6 border-b border-line">
               <div className="px-4 py-3 bg-surface-2">
                 <span className="text-xs font-mono uppercase tracking-wider text-muted">Staff</span>
@@ -78,7 +78,7 @@ export default function Staff({ facilityId }: Props) {
           </div>
 
           {/* Ratio coverage check */}
-          <div className="bg-white border border-line rounded-card overflow-hidden">
+          <div className="bg-surface border border-line rounded-card overflow-hidden">
             <div className="px-6 py-4 border-b border-line">
               <h2 className="font-semibold text-brand">Ratio Coverage Check — Monday</h2>
               <p className="text-xs text-muted mt-0.5">Scheduling is blocked if a ratio-critical certification has lapsed</p>
@@ -124,7 +124,7 @@ export default function Staff({ facilityId }: Props) {
           {centerStaff.map((s) => {
             const anyIssue = s.certifications.some((c) => c.status !== "valid") || s.backgroundScreening.status !== "clear";
             return (
-              <div key={s.id} className={`bg-white border rounded-card overflow-hidden ${anyIssue ? "border-danger-line" : "border-line"}`}>
+              <div key={s.id} className={`bg-surface border rounded-card overflow-hidden ${anyIssue ? "border-danger-line" : "border-line"}`}>
                 <div className="px-6 py-4 border-b border-line flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-full bg-accent-soft flex items-center justify-center text-sm font-bold text-accent">

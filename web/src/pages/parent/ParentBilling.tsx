@@ -27,14 +27,14 @@ export default function ParentBilling() {
         <p className="text-4xl font-bold mt-1">${balance.toLocaleString()}</p>
         <p className="text-sm text-white/70 mt-1">{balance > 0 ? `${mine.filter((i) => status(i) !== "paid").length} open invoice${mine.filter((i) => status(i) !== "paid").length === 1 ? "" : "s"}` : "You're all paid up 🎉"}</p>
         {balance > 0 && (
-          <button onClick={() => setPayTarget(mine.find((i) => status(i) !== "paid") ?? null)} className="mt-4 w-full sm:w-auto min-h-12 px-6 rounded-card bg-white text-brand font-semibold hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand">
+          <button onClick={() => setPayTarget(mine.find((i) => status(i) !== "paid") ?? null)} className="mt-4 w-full sm:w-auto min-h-12 px-6 rounded-card bg-surface text-brand font-semibold hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand">
             Pay ${balance.toLocaleString()} now
           </button>
         )}
       </div>
 
       {/* Autopay */}
-      <div className="bg-white border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4 mb-6 flex items-center gap-4">
+      <div className="bg-surface border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4 mb-6 flex items-center gap-4">
         <div className="w-11 h-11 rounded-card bg-accent-soft text-accent flex items-center justify-center flex-shrink-0"><Landmark size={22} aria-hidden /></div>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-brand">AutoPay</p>
@@ -45,9 +45,9 @@ export default function ParentBilling() {
           aria-checked={autopay}
           aria-label="AutoPay"
           onClick={() => setAutopay((a) => !a)}
-          className={`relative w-14 h-8 rounded-full transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent ${autopay ? "bg-accent" : "bg-line-strong"}`}
+          className={`w-14 h-8 rounded-full p-1 flex items-center transition-colors flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent ${autopay ? "bg-accent" : "bg-line-strong"}`}
         >
-          <span aria-hidden className={`absolute top-1 left-1 w-6 h-6 rounded-full bg-white shadow transition-transform duration-200 ${autopay ? "translate-x-6" : "translate-x-0"}`} />
+          <span aria-hidden className={`w-6 h-6 rounded-full bg-surface shadow transition-transform duration-200 ${autopay ? "translate-x-6" : "translate-x-0"}`} />
         </button>
       </div>
 
@@ -57,7 +57,7 @@ export default function ParentBilling() {
         {mine.map((inv) => {
           const s = status(inv);
           return (
-            <li key={inv.id} className="bg-white border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4 flex items-center gap-3">
+            <li key={inv.id} className="bg-surface border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4 flex items-center gap-3">
               <div className={`w-11 h-11 rounded-card flex items-center justify-center flex-shrink-0 ${s === "paid" ? "bg-success-soft text-success" : s === "overdue" ? "bg-danger-soft text-danger" : "bg-warning-soft text-warning"}`}>
                 <Receipt size={22} aria-hidden />
               </div>
@@ -82,7 +82,7 @@ export default function ParentBilling() {
       {/* Pay modal */}
       {payTarget && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center" onClick={() => { setPayTarget(null); setDone(false); }}>
-          <div role="dialog" aria-modal="true" aria-labelledby="pay-title" className="bg-white rounded-t-[calc(var(--t-radius)+0.5rem)] sm:rounded-[calc(var(--t-radius)+0.25rem)] shadow-2xl w-full sm:max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+          <div role="dialog" aria-modal="true" aria-labelledby="pay-title" className="bg-surface rounded-t-[calc(var(--t-radius)+0.5rem)] sm:rounded-[calc(var(--t-radius)+0.25rem)] shadow-2xl w-full sm:max-w-md p-6" onClick={(e) => e.stopPropagation()}>
             {done ? (
               <div className="text-center py-4">
                 <div className="w-16 h-16 rounded-full bg-success-soft text-success flex items-center justify-center mx-auto mb-4"><Check size={32} aria-hidden /></div>

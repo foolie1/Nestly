@@ -292,7 +292,7 @@ function Shell({ role }: { role: Role }) {
 
       {/* Main */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <header className="h-16 bg-white border-b border-line flex items-center px-3 sm:px-6 flex-shrink-0 gap-2 sm:gap-4">
+        <header className="h-16 bg-surface border-b border-line flex items-center px-3 sm:px-6 flex-shrink-0 gap-2 sm:gap-4">
           <button onClick={() => setDrawerOpen(true)} aria-label="Open menu" className="md:hidden w-11 h-11 -ml-1 flex items-center justify-center text-brand rounded-ctl hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
             <Menu size={22} aria-hidden />
           </button>
@@ -350,7 +350,7 @@ function Shell({ role }: { role: Role }) {
 
         {/* Parent: mobile bottom tab bar */}
         {isParent && (
-          <nav aria-label="Primary" className="md:hidden fixed bottom-0 inset-x-0 bg-white border-t border-line flex z-40 pb-[env(safe-area-inset-bottom)]">
+          <nav aria-label="Primary" className="md:hidden fixed bottom-0 inset-x-0 bg-surface border-t border-line flex z-40 pb-[env(safe-area-inset-bottom)]">
             {nav.map((item) => (
               <button
                 key={item.id}

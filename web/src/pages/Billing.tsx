@@ -34,7 +34,7 @@ export default function Billing({ facilityId }: Props) {
           { label: "Pending", value: `$${pending.toLocaleString()}`, color: "text-warning" },
           { label: "Overdue", value: `$${overdue.toLocaleString()}`, color: "text-danger" },
         ].map((k) => (
-          <div key={k.label} className="bg-white border border-line rounded-card p-5">
+          <div key={k.label} className="bg-surface border border-line rounded-card p-5">
             <p className="text-xs font-mono uppercase tracking-widest text-muted mb-2">{k.label}</p>
             <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
           </div>
@@ -44,7 +44,7 @@ export default function Billing({ facilityId }: Props) {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-line p-1 rounded-ctl w-fit">
         {(["invoices", "schedule"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-ctl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${tab === t ? "bg-white text-brand shadow-sm" : "text-muted hover:text-brand"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-ctl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${tab === t ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-brand"}`}>
             {t === "invoices" ? "Invoice List" : "Tuition Schedule"}
           </button>
         ))}
@@ -79,7 +79,7 @@ export default function Billing({ facilityId }: Props) {
           })}
         </div>
       ) : (
-        <div className="bg-white border border-line rounded-card overflow-hidden">
+        <div className="bg-surface border border-line rounded-card overflow-hidden">
           <div className="px-6 py-4 border-b border-line">
             <h2 className="font-semibold text-brand">Recurring Tuition Schedules</h2>
           </div>
@@ -120,7 +120,7 @@ export default function Billing({ facilityId }: Props) {
       {/* Generate Invoices Modal */}
       {showGenerate && (
         <div className="fixed inset-0 bg-black/30 z-50 flex items-end sm:items-center justify-center" onClick={() => setShowGenerate(false)}>
-          <div className="bg-white rounded-t-[calc(var(--t-radius)+0.5rem)] sm:rounded-[calc(var(--t-radius)+0.25rem)] shadow-2xl w-full sm:max-w-md p-5 sm:p-6 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="bg-surface rounded-t-[calc(var(--t-radius)+0.5rem)] sm:rounded-[calc(var(--t-radius)+0.25rem)] shadow-2xl w-full sm:max-w-md p-5 sm:p-6 max-h-[92vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
             <h2 className="text-lg font-bold text-brand mb-1">Generate Invoices</h2>
             <p className="text-sm text-muted mb-5">Creates one invoice per enrolled child for the selected period.</p>
             <div className="space-y-4">
@@ -154,7 +154,7 @@ export default function Billing({ facilityId }: Props) {
                       className={`w-4 h-4 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
                         generateForm[key as keyof typeof generateForm]
                           ? "bg-brand border-brand"
-                          : "border-line bg-white"
+                          : "border-line bg-surface"
                       }`}
                     >
                       {generateForm[key as keyof typeof generateForm] && (

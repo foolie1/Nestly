@@ -29,7 +29,7 @@ export default function Compliance({ facilityId }: Props) {
       {/* Tabs */}
       <div className="flex gap-1 mb-6 bg-line p-1 rounded-ctl w-fit">
         {(["dashboard", "incidents", "log"] as const).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-ctl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent capitalize ${tab === t ? "bg-white text-brand shadow-sm" : "text-muted hover:text-brand"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-4 py-2 min-h-10 rounded-ctl text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent capitalize ${tab === t ? "bg-surface text-brand shadow-sm" : "text-muted hover:text-brand"}`}>
             {t === "dashboard" ? "Overview" : t === "incidents" ? "Incidents" : "Audit Log"}
           </button>
         ))}
@@ -44,7 +44,7 @@ export default function Compliance({ facilityId }: Props) {
               { label: "Incidents This Month", value: `${centerIncidents.length}`, color: "text-danger", sub: `${centerIncidents.filter((i) => !i.guardianSigned).length} pending guardian signature` },
               { label: "Staff Compliance", value: `${centerStaff.length - bgIssues.length}/${centerStaff.length}`, color: "text-accent", sub: "fully cleared staff" },
             ].map((k) => (
-              <div key={k.label} className="bg-white border border-line rounded-card p-5">
+              <div key={k.label} className="bg-surface border border-line rounded-card p-5">
                 <p className="text-xs font-mono uppercase tracking-widest text-muted mb-2">{k.label}</p>
                 <p className={`text-3xl font-bold ${k.color}`}>{k.value}</p>
                 <p className="text-xs text-muted mt-1">{k.sub}</p>
@@ -53,7 +53,7 @@ export default function Compliance({ facilityId }: Props) {
           </div>
 
           {/* Immunization */}
-          <div className="bg-white border border-line rounded-card overflow-hidden">
+          <div className="bg-surface border border-line rounded-card overflow-hidden">
             <div className="px-6 py-4 border-b border-line flex items-center justify-between">
               <div>
                 <h2 className="font-semibold text-brand">Immunization Status (DH 680)</h2>
@@ -86,7 +86,7 @@ export default function Compliance({ facilityId }: Props) {
           </div>
 
           {/* Staff Certifications */}
-          <div className="bg-white border border-line rounded-card overflow-hidden">
+          <div className="bg-surface border border-line rounded-card overflow-hidden">
             <div className="px-6 py-4 border-b border-line">
               <h2 className="font-semibold text-brand">Staff Certifications &amp; Background Screening</h2>
               <p className="text-xs text-muted mt-0.5">Level 2 background screening required — rescreening every 5 years (FL DCF)</p>
@@ -139,7 +139,7 @@ export default function Compliance({ facilityId }: Props) {
                 { age: "Preschool", range: "3–5 years", ratio: "1:15" },
                 { age: "School-Age", range: "6+ years", ratio: "1:20" },
               ].map((r) => (
-                <div key={r.age} className="bg-white rounded-card p-3 text-center">
+                <div key={r.age} className="bg-surface rounded-card p-3 text-center">
                   <p className="font-bold text-2xl text-accent">{r.ratio}</p>
                   <p className="text-xs font-semibold text-brand mt-1">{r.age}</p>
                   <p className="text-xs text-muted">{r.range}</p>
@@ -163,7 +163,7 @@ export default function Compliance({ facilityId }: Props) {
             <button
               key={inc.id}
               onClick={() => setSelectedIncident(inc)}
-              className="w-full bg-white border border-line rounded-card p-5 text-left hover:border-accent transition-all"
+              className="w-full bg-surface border border-line rounded-card p-5 text-left hover:border-accent transition-all"
             >
               <div className="flex items-start justify-between mb-2">
                 <div>
@@ -192,7 +192,7 @@ export default function Compliance({ facilityId }: Props) {
 
           {selectedIncident && (
             <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-end" onClick={() => setSelectedIncident(null)}>
-              <div className="bg-white h-full w-full sm:w-96 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="bg-surface h-full w-full sm:w-96 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="px-6 py-5 border-b border-line flex items-start justify-between">
                   <h2 className="text-lg font-bold text-brand">Incident Report</h2>
                   <button onClick={() => setSelectedIncident(null)} className="text-muted hover:text-brand text-xl">×</button>
@@ -226,7 +226,7 @@ export default function Compliance({ facilityId }: Props) {
       )}
 
       {tab === "log" && (
-        <div className="bg-white border border-line rounded-card overflow-hidden">
+        <div className="bg-surface border border-line rounded-card overflow-hidden">
           <div className="px-6 py-4 border-b border-line">
             <h2 className="font-semibold text-brand">Audit Log</h2>
             <p className="text-xs text-muted mt-0.5">All compliance-relevant events · retained indefinitely per Florida default</p>

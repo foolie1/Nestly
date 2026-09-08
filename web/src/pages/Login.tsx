@@ -23,7 +23,7 @@ const ROLES: { id: Role; label: string; Icon: typeof Baby; accent: string }[] = 
 ];
 
 const inputCls =
-  "w-full min-h-11 border border-line rounded-card px-3.5 py-2.5 text-base bg-white focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-shadow";
+  "w-full min-h-11 border border-line rounded-card px-3.5 py-2.5 text-base bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:border-accent transition-shadow";
 const labelCls = "text-xs font-mono uppercase tracking-widest text-muted block mb-1.5";
 const primaryBtn =
   "w-full min-h-12 rounded-card text-base font-semibold text-white bg-brand hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed";
@@ -87,7 +87,7 @@ function RoleForm({ role, onBack }: { role: Role; onBack: () => void }) {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
-      <div className="lg:col-span-3 bg-white border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-6 sm:p-8 shadow-sm">
+      <div className="lg:col-span-3 bg-surface border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-6 sm:p-8 shadow-sm">
         <button
           onClick={onBack}
           className="inline-flex items-center gap-1.5 text-sm text-muted hover:text-brand min-h-11 -ml-1 px-1 rounded-ctl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -354,7 +354,7 @@ function StaffForm() {
       <p className="text-xs text-muted text-center flex items-center justify-center gap-1.5">
         <KeyRound size={14} aria-hidden /> Works on the classroom tablet too.
       </p>
-      <div className="relative py-1"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-line" /></div><p className="relative text-center text-xs text-muted"><span className="bg-white px-2">First day?</span></p></div>
+      <div className="relative py-1"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-line" /></div><p className="relative text-center text-xs text-muted"><span className="bg-surface px-2">First day?</span></p></div>
       <button type="button" onClick={() => { setMode("setup"); setError(null); setPin(""); }} className="w-full min-h-12 rounded-card border-2 border-accent text-accent font-semibold hover:bg-accent-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors">
         Create my PIN
       </button>
@@ -499,7 +499,7 @@ function ParentForm() {
       </div>
       {error && <ErrorBox msg={error} />}
       <button type="submit" className={primaryBtn} disabled={!email || !pw}>Sign in</button>
-      <div className="relative py-1"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-line" /></div><p className="relative text-center text-xs text-muted"><span className="bg-white px-2">New to Nestly?</span></p></div>
+      <div className="relative py-1"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-line" /></div><p className="relative text-center text-xs text-muted"><span className="bg-surface px-2">New to Nestly?</span></p></div>
       <button type="button" onClick={() => setMode("setup")} className="w-full min-h-12 rounded-card border-2 border-accent text-accent font-semibold hover:bg-accent-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors">
         Set up with my family code
       </button>

@@ -25,7 +25,7 @@ export function ChildSwitcher({ value, onChange }: { value: string; onChange: (i
           role="tab"
           aria-selected={value === k.id}
           onClick={() => onChange(k.id)}
-          className={`px-4 py-2 rounded-full text-sm font-medium min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${value === k.id ? "bg-brand text-white" : "bg-white border border-line text-muted"}`}
+          className={`px-4 py-2 rounded-full text-sm font-medium min-h-11 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${value === k.id ? "bg-brand text-white" : "bg-surface border border-line text-muted"}`}
         >
           {k.name.split(" ")[0]}
         </button>

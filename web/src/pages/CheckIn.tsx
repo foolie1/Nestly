@@ -130,7 +130,7 @@ function SignatureModal({
   return (
     <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4" onClick={onCancel}>
       <div
-        className="bg-white rounded-[calc(var(--t-radius)+0.25rem)] shadow-2xl w-full max-w-md"
+        className="bg-surface rounded-[calc(var(--t-radius)+0.25rem)] shadow-2xl w-full max-w-md"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -302,7 +302,7 @@ export default function CheckIn({ facilityId, roomFilter }: Props) {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search children or guardians..."
-          className="w-full max-w-sm bg-white border border-line rounded-ctl px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus:border-accent transition-colors"
+          className="w-full max-w-sm bg-surface border border-line rounded-ctl px-4 py-2.5 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus:border-accent transition-colors"
         />
       </div>
 
@@ -331,7 +331,7 @@ export default function CheckIn({ facilityId, roomFilter }: Props) {
                 const isIn = childStates[child.id];
                 const sig = signatures[child.id];
                 return (
-                  <div key={child.id} className={`bg-white border rounded-card p-4 transition-all ${isIn ? "border-accent shadow-sm" : "border-line"}`}>
+                  <div key={child.id} className={`bg-surface border rounded-card p-4 transition-all ${isIn ? "border-accent shadow-sm" : "border-line"}`}>
                     <div className="flex items-start justify-between mb-3">
                       <div>
                         <p className="font-semibold text-brand">{child.name}</p>

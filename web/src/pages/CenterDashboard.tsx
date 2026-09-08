@@ -57,7 +57,7 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
           { label: "Open Incidents", value: `${centerIncidents.length}`, sub: "This month", action: () => onNav("compliance") },
           { label: "Immunization Flags", value: `${immWarnings}`, sub: "Require attention", action: () => onNav("enrollment") },
         ].map((k) => (
-          <button key={k.label} onClick={k.action} className="bg-white border border-line rounded-card p-5 text-left hover:border-accent hover:shadow-sm transition-all">
+          <button key={k.label} onClick={k.action} className="bg-surface border border-line rounded-card p-5 text-left hover:border-accent hover:shadow-sm transition-all">
             <p className="text-xs font-mono uppercase tracking-widest text-muted mb-2">{k.label}</p>
             <p className="text-2xl sm:text-3xl font-bold text-brand">{k.value}</p>
             <p className="text-xs text-muted mt-1">{k.sub}</p>
@@ -67,7 +67,7 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
 
       {/* Rooms + Staff */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6 mb-8">
-        <div className="lg:col-span-2 bg-white border border-line rounded-card overflow-hidden">
+        <div className="lg:col-span-2 bg-surface border border-line rounded-card overflow-hidden">
           <div className="px-6 py-4 border-b border-line flex items-center justify-between">
             <h2 className="font-semibold text-brand">Rooms &amp; Live Ratios</h2>
             <button onClick={() => onNav("checkin")} className="text-xs text-accent font-medium hover:underline">Manage check-in →</button>
@@ -106,7 +106,7 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
         </div>
 
         {/* Staff Summary */}
-        <div className="bg-white border border-line rounded-card overflow-hidden">
+        <div className="bg-surface border border-line rounded-card overflow-hidden">
           <div className="px-6 py-4 border-b border-line flex items-center justify-between">
             <h2 className="font-semibold text-brand">Staff Today</h2>
             <button onClick={() => onNav("staff")} className="text-xs text-accent font-medium hover:underline">Schedule →</button>
@@ -141,7 +141,7 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
       </div>
 
       {/* Recent Activity */}
-      <div className="bg-white border border-line rounded-card overflow-hidden">
+      <div className="bg-surface border border-line rounded-card overflow-hidden">
         <div className="px-6 py-4 border-b border-line flex items-center justify-between">
           <h2 className="font-semibold text-brand">Recent Activity</h2>
           <button onClick={() => onNav("logs")} className="text-xs text-accent font-medium hover:underline">All logs →</button>
