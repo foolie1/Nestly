@@ -1,6 +1,9 @@
 import { CalendarCheck, ClipboardList, MessageSquare, Receipt, UserPlus } from "lucide-react";
-import { facilities, incidents, staff } from "../data";
-import { useRoster } from "../roster";
+import { facilities, staff } from "../data";
+import { facilityEnrollment, roomOccupancy, useRoster } from "../roster";
+import { useIncidents } from "../incidents";
+import { useLogs } from "../logs";
+import { LOG_META } from "../logs";
 import { useAuth } from "../auth";
 
 type Props = { facilityId: string; onNav: (page: string) => void };
@@ -10,11 +13,19 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
   const { roster: children } = useRoster();
   const viewLabel = user?.role === "office_admin" ? "Office Admin View" : user?.role === "owner" ? "Center View" : "Center Director View";
   const facility = facilities.find((f) => f.id === facilityId) ?? facilities[0];
+  const { at } = useIncidents();
+  const { entries } = useLogs();
   const centerChildren = children.filter((c) => c.facilityId === facilityId);
   const checkedIn = centerChildren.filter((c) => c.checkedIn).length;
+  const enrolled = facilityEnrollment(facilityId, children);
   const centerStaff = staff.filter((s) => s.facilityId === facilityId);
-  const centerIncidents = incidents.filter((i) => i.facilityId === facilityId);
+  const centerIncidents = at(facilityId);
   const immWarnings = centerChildren.filter((c) => c.immunizationStatus !== "current").length;
+  // Real activity, newest first — this used to be a hardcoded list.
+  const recent = entries
+    .filter((e) => e.facilityId === facilityId)
+    .sort((a, b) => b.timestamp.localeCompare(a.timestamp))
+    .slice(0, 6);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">
@@ -52,8 +63,8 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
       {/* KPIs */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         {[
-          { label: "Enrolled", value: `${facility.enrollment}`, sub: `of ${facility.capacity} seats`, action: () => onNav("enrollment") },
-          { label: "Checked In Today", value: `${checkedIn}`, sub: `of ${facility.enrollment} enrolled`, action: () => onNav("checkin") },
+          { label: "Enrolled", value: `${enrolled}`, sub: `of ${facility.capacity} seats`, action: () => onNav("enrollment") },
+          { label: "Checked In Today", value: `${checkedIn}`, sub: `of ${enrolled} enrolled`, action: () => onNav("checkin") },
           { label: "Open Incidents", value: `${centerIncidents.length}`, sub: "This month", action: () => onNav("compliance") },
           { label: "Immunization Flags", value: `${immWarnings}`, sub: "Require attention", action: () => onNav("enrollment") },
         ].map((k) => (
@@ -74,10 +85,12 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
           </div>
           <div className="divide-y divide-line">
             {facility.rooms.map((r) => {
-              const ratio = r.staffCount > 0 ? r.childrenPresent / r.staffCount : 0;
+              // Live headcount from the roster, so checking a child in moves this.
+              const { present } = roomOccupancy(facilityId, r.name, children);
+              const ratio = r.staffCount > 0 ? present / r.staffCount : 0;
               const over = ratio > r.ratioLimit;
               const atCap = !over && r.staffCount > 0 && ratio === r.ratioLimit;
-              const pct = Math.min(r.childrenPresent / r.capacity, 1);
+              const pct = Math.min(present / r.capacity, 1);
               const ageLabel = { infant: "Infants (≤18 mo) · 1:4 max", toddler: "Toddlers (18–36 mo) · 1:6 max", preschool: "Preschool (3–5 yr) · 1:15 max", "school-age": "School-Age · 1:20 max" }[r.ageGroup];
               return (
                 <div key={r.id} className="px-6 py-4">
@@ -87,7 +100,7 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
                       <p className="text-xs text-muted">{ageLabel}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-muted">{r.childrenPresent}/{r.capacity} children</span>
+                      <span className="text-xs font-mono text-muted">{present}/{r.capacity} children</span>
                       <span className={`font-mono text-sm font-bold px-2.5 py-1 rounded-ctl ${over ? "bg-danger-soft text-danger" : atCap ? "bg-warning-soft text-warning" : "bg-success-soft text-success"}`}>
                         {over ? "⚠ " : atCap ? "△ " : ""}1:{ratio.toFixed(1)}{atCap ? " — at limit" : ""}
                       </span>
@@ -147,23 +160,18 @@ export default function CenterDashboard({ facilityId, onNav }: Props) {
           <button onClick={() => onNav("logs")} className="text-xs text-accent font-medium hover:underline">All logs →</button>
         </div>
         <div className="divide-y divide-line">
-          {[
-            { time: "10:45", type: "Check-out", text: "Amelia Torres checked out by Carmen Torres (authorized)", tag: "check-out" },
-            { time: "10:20", type: "Incident", text: "James Williams — small fall, no injury, monitored 15 min", tag: "incident" },
-            { time: "10:00", type: "Meal Log", text: "Noah Patel — 5 oz formula, finished", tag: "meal" },
-            { time: "09:30", type: "Nap", text: "Amelia Torres — nap started, swaddled", tag: "nap" },
-            { time: "09:00", type: "Billing", text: "Invoice sent to Reyes family — August overdue ($1,250)", tag: "billing" },
-          ].map((a, i) => (
-            <div key={i} className="px-6 py-3.5 flex items-center gap-4">
-              <span className="font-mono text-xs text-muted w-12 flex-shrink-0">{a.time}</span>
-              <span className={`text-xs px-2 py-0.5 rounded font-mono ${
-                a.tag === "incident" ? "bg-danger-soft text-danger" :
-                a.tag === "billing" ? "bg-warning-soft text-warning" :
-                "bg-surface-2 text-muted"
-              }`}>{a.type}</span>
-              <span className="text-sm text-ink">{a.text}</span>
-            </div>
-          ))}
+          {recent.map((a) => {
+            const meta = LOG_META[a.type];
+            return (
+              <div key={a.id} className="px-6 py-3.5 flex items-center gap-4">
+                <span className="font-mono text-xs text-muted w-12 flex-shrink-0">{a.timestamp}</span>
+                <span className={`text-xs px-2 py-0.5 rounded font-mono flex-shrink-0 ${meta.bg} ${meta.fg}`}>{meta.label}</span>
+                <span className="text-sm text-ink flex-1 min-w-0 truncate">{a.childName} — {a.title ?? a.detail}</span>
+                {a.media?.length ? <img src={a.media[0]} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 border border-line" /> : a.videos?.[0]?.poster ? <img src={a.videos[0].poster} alt="" className="w-8 h-8 rounded object-cover flex-shrink-0 border border-line" /> : null}
+              </div>
+            );
+          })}
+          {recent.length === 0 && <p className="px-6 py-8 text-center text-sm text-muted">Nothing logged yet today.</p>}
         </div>
       </div>
     </div>

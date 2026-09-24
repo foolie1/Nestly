@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { staff, facilities } from "../data";
+import { roomOccupancy, useRoster } from "../roster";
 
 type Props = { facilityId: string };
 
 const DAYS = ["Mon", "Tue", "Wed", "Thu", "Fri"];
 
 export default function Staff({ facilityId }: Props) {
+  const { roster } = useRoster();
   const [tab, setTab] = useState<"schedule" | "certifications">("schedule");
   const centerStaff = staff.filter((s) => s.facilityId === facilityId);
   const facility = facilities.find((f) => f.id === facilityId) ?? facilities[0];
@@ -89,13 +91,14 @@ export default function Staff({ facilityId }: Props) {
                 const expiredCount = roomStaff.filter((s) => s.certifications.some((c) => c.status === "expired")).length;
                 const effectiveStaff = roomStaff.length - expiredCount;
                 const noStaff = effectiveStaff === 0;
-                const ratio = !noStaff ? room.childrenPresent / effectiveStaff : 0;
+                const enrolledHere = roomOccupancy(facilityId, room.name, roster).enrolled;
+                const ratio = !noStaff ? enrolledHere / effectiveStaff : 0;
                 const over = !noStaff && ratio > room.ratioLimit;
                 return (
                   <div key={room.id} className="px-6 py-4 flex items-center justify-between">
                     <div>
                       <p className="font-medium text-brand">{room.name}</p>
-                      <p className="text-xs text-muted">{room.childrenPresent} children enrolled · {roomStaff.length} staff scheduled</p>
+                      <p className="text-xs text-muted">{enrolledHere} children enrolled · {roomStaff.length} staff scheduled</p>
                     </div>
                     <div className="flex items-center gap-3">
                       {expiredCount > 0 && (

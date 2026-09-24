@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { facilities, type Child } from "../data";
 import { useRoster } from "../roster";
 import { useAuth } from "../auth";
+import { AllergyBadges } from "../components/allergy";
 
 type Props = { facilityId: string; roomFilter?: string };
 
@@ -216,7 +217,7 @@ function SignatureModal({
 
 export default function CheckIn({ facilityId, roomFilter }: Props) {
   const { user } = useAuth();
-  const { roster } = useRoster();
+  const { roster, setCheckedIn } = useRoster();
   // Teachers see the operational rules; the regulatory framing is for the admin side.
   const showRegNotice = user?.role !== "staff";
   // Ratio status is hidden from teachers for now; the over-ratio block still runs.
@@ -224,9 +225,9 @@ export default function CheckIn({ facilityId, roomFilter }: Props) {
   const facilityBase = facilities.find((f) => f.id === facilityId) ?? facilities[0];
   const facility = roomFilter ? { ...facilityBase, rooms: facilityBase.rooms.filter((r) => r.name === roomFilter) } : facilityBase;
   const facilityChildren = roster.filter((c) => c.facilityId === facilityId && (!roomFilter || c.room === roomFilter));
-  const [childStates, setChildStates] = useState<Record<string, boolean>>(
-    Object.fromEntries(facilityChildren.map((c) => [c.id, c.checkedIn]))
-  );
+  // Presence lives on the roster, not in this page — My Room, the dashboards
+  // and the ratio displays all read the same value.
+  const childStates: Record<string, boolean> = Object.fromEntries(facilityChildren.map((c) => [c.id, c.checkedIn]));
   const [checkInTimes, setCheckInTimes] = useState<Record<string, string>>({});
   const [signatures, setSignatures] = useState<Record<string, SignatureRecord>>({});
   const [alert, setAlert] = useState<string | null>(null);
@@ -256,7 +257,7 @@ export default function CheckIn({ facilityId, roomFilter }: Props) {
     if (!signatureRequest) return;
     const childId = signatureRequest.child.id;
     const goingIn = signatureRequest.action === "in";
-    setChildStates((s) => ({ ...s, [childId]: goingIn }));
+    setCheckedIn(childId, goingIn);
     setSignatures((s) => ({ ...s, [childId]: record }));
     if (goingIn) {
       setCheckInTimes((t) => ({ ...t, [childId]: record.timestamp }));
@@ -333,9 +334,10 @@ export default function CheckIn({ facilityId, roomFilter }: Props) {
                 return (
                   <div key={child.id} className={`bg-surface border rounded-card p-4 transition-all ${isIn ? "border-accent shadow-sm" : "border-line"}`}>
                     <div className="flex items-start justify-between mb-3">
-                      <div>
+                      <div className="min-w-0">
                         <p className="font-semibold text-brand">{child.name}</p>
                         <p className="text-xs text-muted">{child.guardian}</p>
+                        <AllergyBadges child={child} />
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {child.immunizationStatus === "missing" && (

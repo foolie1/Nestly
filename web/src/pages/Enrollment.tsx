@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { AlertTriangle, Check, GraduationCap, Search, UserPlus, X } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, GraduationCap, Search, UserPlus, X } from "lucide-react";
 import { facilities, type EnrollmentLead } from "../data";
 import { bandForDob, roomsWithSpace, useRoster, type Stage } from "../roster";
+import { useTours } from "../tours";
+import { ScheduleTourModal } from "./Tours";
 
 const STAGES: { id: Stage; label: string; color: string }[] = [
   { id: "inquiry", label: "Inquiry", color: "bg-line" },
@@ -16,6 +18,8 @@ type Props = { facilityId: string };
 
 export default function Enrollment({ facilityId }: Props) {
   const { roster, leads, addLead, moveLead } = useRoster();
+  const { tours } = useTours();
+  const [touring, setTouring] = useState<EnrollmentLead | null>(null);
   const [tab, setTab] = useState<"pipeline" | "roster">("pipeline");
   const [selected, setSelected] = useState<EnrollmentLead | null>(null);
   const [showNewInquiry, setShowNewInquiry] = useState(false);
@@ -233,6 +237,20 @@ export default function Enrollment({ facilityId }: Props) {
                 </button>
               )}
 
+              {(() => {
+                const booked = tours.find((t) => t.leadId === liveSelected.id && ["scheduled", "confirmed", "reschedule-requested"].includes(t.status));
+                return booked ? (
+                  <div className="bg-info-soft rounded-card px-4 py-3 text-sm text-ink">
+                    <span className="font-semibold text-info">Tour booked</span> · {new Date(booked.startsAt).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                    <span className="block text-xs text-muted mt-0.5">{booked.smsConsent ? "Text reminders are on" : "No texts — call to confirm"}</span>
+                  </div>
+                ) : (
+                  <button onClick={() => setTouring(liveSelected)} className="w-full inline-flex items-center justify-center gap-2 min-h-12 rounded-ctl border border-line text-brand font-semibold hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <CalendarClock size={18} aria-hidden /> Schedule a tour
+                  </button>
+                );
+              })()}
+
               <div className="pt-1">
                 <p className="text-xs font-mono text-muted uppercase tracking-widest mb-2">Move stage</p>
                 <div className="flex flex-wrap gap-2">
@@ -250,6 +268,10 @@ export default function Enrollment({ facilityId }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {touring && (
+        <ScheduleTourModal facilityId={facilityId} lead={touring} onClose={() => setTouring(null)} onDone={flash} />
       )}
 
       {toast && (

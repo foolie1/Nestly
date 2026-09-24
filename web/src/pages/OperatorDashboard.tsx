@@ -1,11 +1,58 @@
-import { facilities } from "../data";
+import { facilities, staff } from "../data";
+import { facilityEnrollment, roomOccupancy, useRoster } from "../roster";
+import { useIncidents } from "../incidents";
+import { collections, useBilling } from "../billing";
+import { Collections } from "../components/Collections";
 
 type Props = { onSelectFacility: (id: string) => void; onNav: (page: string) => void };
 
 export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
-  const totalEnrollment = facilities.reduce((s, f) => s + f.enrollment, 0);
+  const { roster } = useRoster();
+  const { incidents } = useIncidents();
+  const enrollmentAt = (id: string) => facilityEnrollment(id, roster);
+  const openIncidents = incidents.filter((i) => !i.guardianSigned);
+
+  const shortName = (id: string) => (facilities.find((f) => f.id === id)?.name ?? "").replace(" Center", "");
+  /**
+   * Everything currently out of compliance, gathered from the real records
+   * rather than a fixed list — so fixing one makes it disappear.
+   */
+  const alerts = [
+    ...roster
+      .filter((c) => c.immunizationStatus !== "current")
+      .map((c) => ({
+        center: shortName(c.facilityId),
+        issue: `${c.name} — DH 680 immunization ${c.immunizationStatus === "missing" ? "missing" : "expires soon"}`,
+        severity: c.immunizationStatus === "missing" ? "alert" : "warning",
+      })),
+    ...staff.flatMap((s) =>
+      s.certifications
+        .filter((c) => c.status !== "valid")
+        .map((c) => ({
+          center: shortName(s.facilityId),
+          issue: `${s.name} — ${c.name} ${c.status === "expired" ? "EXPIRED" : `expires ${c.expiry}`}`,
+          severity: c.status === "expired" ? "alert" : "warning",
+        })),
+    ),
+    ...staff
+      .filter((s) => s.backgroundScreening.status !== "clear")
+      .map((s) => ({
+        center: shortName(s.facilityId),
+        issue: `${s.name} — Level 2 background screening ${s.backgroundScreening.status}`,
+        severity: "warning",
+      })),
+    ...openIncidents.map((i) => ({
+      center: shortName(i.facilityId),
+      issue: `${i.childName} — guardian signature pending on ${i.type.toLowerCase()}`,
+      severity: "warning",
+    })),
+  ].sort((a, b) => (a.severity === b.severity ? 0 : a.severity === "alert" ? -1 : 1));
+  const totalEnrollment = facilities.reduce((s, f) => s + enrollmentAt(f.id), 0);
   const totalCapacity = facilities.reduce((s, f) => s + f.capacity, 0);
-  const totalRevenue = facilities.reduce((s, f) => s + f.revenue, 0);
+  // Revenue comes from when payments actually arrived, not a stored monthly figure.
+  const { payments } = useBilling();
+  const weekAll = collections(payments, { period: "week", count: 2 });
+  const monthFor = (id?: string) => collections(payments, { period: "month", count: 1, facilityId: id })[0].total;
   const avgCompliance = Math.round(facilities.reduce((s, f) => s + f.complianceScore, 0) / facilities.length);
 
   return (
@@ -20,9 +67,9 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
         {[
           { label: "Total Enrollment", value: `${totalEnrollment}`, sub: `of ${totalCapacity} seats`, color: "text-brand" },
-          { label: "Monthly Revenue", value: `$${totalRevenue.toLocaleString()}`, sub: "across all centers", color: "text-accent" },
+          { label: "Collected this week", value: `$${weekAll[1].total.toLocaleString()}`, sub: `$${monthFor().toLocaleString()} so far this month`, color: "text-accent" },
           { label: "Avg Compliance", value: `${avgCompliance}%`, sub: "Florida rule pack", color: avgCompliance >= 95 ? "text-success" : "text-warning" },
-          { label: "Open Incidents", value: "4", sub: "2 require signatures", color: "text-danger" },
+          { label: "Open Incidents", value: `${incidents.length}`, sub: `${openIncidents.length} require signatures`, color: "text-danger" },
         ].map((k) => (
           <div key={k.label} className="bg-surface border border-line rounded-card p-5">
             <p className="text-xs font-mono uppercase tracking-widest text-muted mb-2">{k.label}</p>
@@ -32,16 +79,22 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
         ))}
       </div>
 
+      {/* Money in across every center, by week or month */}
+      <div className="mb-8">
+        <Collections payments={payments} heading="Tuition collected · all centers" />
+      </div>
+
       {/* Centers — cards */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold text-brand">Your centers</h2>
-          <span className="text-xs font-mono text-muted">LIVE · Updated 8:47 AM</span>
+          <span className="text-xs font-mono text-muted">Live</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {facilities.map((f) => {
-            const occupancy = Math.round((f.enrollment / f.capacity) * 100);
-            const over = f.rooms.filter((r) => r.staffCount > 0 && r.childrenPresent / r.staffCount > r.ratioLimit).length;
+            const enrolled = enrollmentAt(f.id);
+            const occupancy = Math.round((enrolled / f.capacity) * 100);
+            const over = f.rooms.filter((r) => r.staffCount > 0 && roomOccupancy(f.id, r.name, roster).present / r.staffCount > r.ratioLimit).length;
             const pill = f.status === "good" ? "bg-success-soft text-success" : f.status === "warning" ? "bg-warning-soft text-warning" : "bg-danger-soft text-danger";
             const dot = f.status === "good" ? "bg-success" : f.status === "warning" ? "bg-warning" : "bg-danger";
             return (
@@ -61,8 +114,8 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
                   </span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-4">
-                  <div className="bg-surface-2 rounded-card p-3"><p className="text-[11px] font-mono uppercase tracking-wider text-muted">Enrolled</p><p className="text-xl font-bold text-brand">{f.enrollment}<span className="text-xs font-normal text-muted">/{f.capacity}</span></p></div>
-                  <div className="bg-surface-2 rounded-card p-3"><p className="text-[11px] font-mono uppercase tracking-wider text-muted">Revenue</p><p className="text-xl font-bold text-accent">${Math.round(f.revenue / 1000)}k</p></div>
+                  <div className="bg-surface-2 rounded-card p-3"><p className="text-[11px] font-mono uppercase tracking-wider text-muted">Enrolled</p><p className="text-xl font-bold text-brand">{enrolled}<span className="text-xs font-normal text-muted">/{f.capacity}</span></p></div>
+                  <div className="bg-surface-2 rounded-card p-3"><p className="text-[11px] font-mono uppercase tracking-wider text-muted">This month</p><p className="text-xl font-bold text-accent">${(monthFor(f.id) / 1000).toFixed(1).replace(/\.0$/, "")}k</p></div>
                   <div className="bg-surface-2 rounded-card p-3"><p className="text-[11px] font-mono uppercase tracking-wider text-muted">Rooms</p><p className="text-xl font-bold text-brand">{f.rooms.length}{over > 0 && <span className="text-xs font-semibold text-danger ml-1">⚠{over}</span>}</p></div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -83,13 +136,8 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
             <h2 className="font-semibold text-brand">Compliance Alerts</h2>
           </div>
           <div className="divide-y divide-line">
-            {[
-              { center: "Coral Springs", issue: "Rashida Okafor — CPR cert expires in 20 days", severity: "warning" },
-              { center: "Coral Springs", issue: "Gloria Sánchez — CPR cert EXPIRED", severity: "alert" },
-              { center: "Coral Springs", issue: "James Williams — DH 680 immunization missing", severity: "alert" },
-              { center: "Boca Raton", issue: "Marcus Webb — Level 2 background screening pending", severity: "warning" },
-              { center: "Boca Raton", issue: "Sofia Reyes — guardian signature pending on incident", severity: "warning" },
-            ].map((a, i) => (
+            {alerts.length === 0 && <p className="px-6 py-8 text-center text-sm text-muted">Nothing needs attention right now.</p>}
+            {alerts.map((a, i) => (
               <div key={i} className="px-6 py-3.5 flex items-start gap-3">
                 <span className={`mt-0.5 w-2 h-2 rounded-full flex-shrink-0 ${a.severity === "alert" ? "bg-danger" : "bg-warning"}`} />
                 <div>
@@ -108,7 +156,8 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
           <div className="divide-y divide-line">
             {facilities.flatMap((f) =>
               f.rooms.map((r) => {
-                const ratio = r.staffCount > 0 ? r.childrenPresent / r.staffCount : Infinity;
+                const present = roomOccupancy(f.id, r.name, roster).present;
+                const ratio = r.staffCount > 0 ? present / r.staffCount : Infinity;
                 const over = ratio > r.ratioLimit;
                 return (
                   <div key={r.id} className="px-6 py-3 flex items-center justify-between">
@@ -117,7 +166,7 @@ export default function OperatorDashboard({ onSelectFacility, onNav }: Props) {
                       <p className="text-xs text-muted">{f.name.split(" ")[0]}</p>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="text-xs font-mono text-muted">{r.childrenPresent} children / {r.staffCount} staff</span>
+                      <span className="text-xs font-mono text-muted">{present} children / {r.staffCount} staff</span>
                       <span className={`font-mono text-sm font-semibold px-2 py-0.5 rounded ${over ? "bg-danger-soft text-danger" : "bg-success-soft text-success"}`}>
                         1:{Math.round(ratio * 10) / 10}
                       </span>

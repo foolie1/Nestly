@@ -1,15 +1,78 @@
 import { useState } from "react";
-import { invoices } from "../data";
+import { X } from "lucide-react";
+import { type Invoice } from "../data";
+import { useBilling } from "../billing";
+import { Collections } from "../components/Collections";
+import { useRoster } from "../roster";
+import { useMessages } from "../messages";
 
 type Props = { facilityId: string };
 
+const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
+
 export default function Billing({ facilityId }: Props) {
+  const { at, generate, payments } = useBilling();
   const [tab, setTab] = useState<"invoices" | "schedule">("invoices");
   const [showGenerate, setShowGenerate] = useState(false);
   const [generateForm, setGenerateForm] = useState({ period: "October 2026", dueDate: "2026-10-01", sendEmail: true, includeOverdue: true });
-  const centerInvoices = invoices.filter((i) => i.facilityId === facilityId);
-  const total = centerInvoices.reduce((s, i) => s + i.amount, 0);
-  const paid = centerInvoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
+  const [toast, setToast] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<Invoice | null>(null);
+  // Same store the parent portal writes to — a family paying in their app
+  // shows here without anyone re-keying it.
+  const centerInvoices = at(facilityId);
+  const { roster } = useRoster();
+  const { startOutreach } = useMessages();
+
+  const flash = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2800);
+  };
+
+  /** Sends a real billing message to the family rather than a fake toast. */
+  const remind = (inv: Invoice) => {
+    const child = roster.find((c) => c.name === inv.child);
+    if (!child) {
+      flash(`No portal account linked to ${inv.family} yet`);
+      return;
+    }
+    const sent = startOutreach({
+      childId: child.id,
+      category: "billing",
+      title: `${inv.period} tuition · $${inv.amount.toLocaleString()}`,
+      body: `Hi — a friendly reminder that the ${inv.period} invoice for ${inv.child} (${`$${inv.amount.toLocaleString()}`}) ${inv.status === "overdue" ? "is past due" : `is due ${inv.dueDate}`}. You can pay it in the Billing tab of your parent portal. Let us know if you'd like to set up a payment plan.`,
+    });
+    flash(sent ? `Reminder sent to ${inv.family}` : `Couldn't reach ${inv.family}`);
+  };
+
+  /** One invoice per enrolled child, at the rate their last invoice used. */
+  const runGenerate = () => {
+    const made = generate({
+      facilityId,
+      period: generateForm.period,
+      dueDate: generateForm.dueDate,
+      rateFor: (childName) => centerInvoices.find((i) => i.child === childName)?.amount ?? 0,
+    });
+    setShowGenerate(false);
+    flash(made === 0 ? `Invoices for ${generateForm.period} already exist` : `${made} invoice${made === 1 ? "" : "s"} generated for ${generateForm.period}`);
+  };
+
+  // How each family most recently paid — AutoPay, the parent portal, or at the office.
+  const lastSource = new Map<string, "portal" | "office" | "autopay">();
+  [...payments].filter((p) => p.facilityId === facilityId).sort((a, b) => a.paidAt.localeCompare(b.paidAt)).forEach((p) => lastSource.set(p.child, p.source));
+
+  /** The recurring schedule, read off the most recent invoice per family. */
+  const schedules = [...new Map(centerInvoices.map((i) => [i.child, i])).values()].map((i) => {
+    const child = roster.find((c) => c.name === i.child);
+    const outstanding = centerInvoices.some((x) => x.child === i.child && x.status === "overdue");
+    return {
+      family: i.family,
+      child: i.child,
+      room: child?.room ?? "—",
+      amount: i.amount,
+      nextDue: outstanding ? "Past due" : generateForm.dueDate,
+      source: lastSource.get(i.child),
+    };
+  });
   const pending = centerInvoices.filter((i) => i.status === "pending").reduce((s, i) => s + i.amount, 0);
   const overdue = centerInvoices.filter((i) => i.status === "overdue").reduce((s, i) => s + i.amount, 0);
 
@@ -26,17 +89,21 @@ export default function Billing({ facilityId }: Props) {
         </button>
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-8">
+      {/* Money in, by week or month — read from when payments actually arrived */}
+      <div className="mb-6">
+        <Collections payments={payments} facilityId={facilityId} heading="Tuition collected" />
+      </div>
+
+      {/* What's still owed */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 mb-8">
         {[
-          { label: "Total Billed", value: `$${total.toLocaleString()}`, color: "text-brand" },
-          { label: "Collected", value: `$${paid.toLocaleString()}`, color: "text-success" },
-          { label: "Pending", value: `$${pending.toLocaleString()}`, color: "text-warning" },
-          { label: "Overdue", value: `$${overdue.toLocaleString()}`, color: "text-danger" },
+          { label: "Due, not yet paid", value: `$${pending.toLocaleString()}`, sub: plural(centerInvoices.filter((i) => i.status === "pending").length, "invoice"), color: "text-warning" },
+          { label: "Overdue", value: `$${overdue.toLocaleString()}`, sub: plural(centerInvoices.filter((i) => i.status === "overdue").length, "invoice"), color: "text-danger" },
         ].map((k) => (
           <div key={k.label} className="bg-surface border border-line rounded-card p-5">
             <p className="text-xs font-mono uppercase tracking-widest text-muted mb-2">{k.label}</p>
             <p className={`text-2xl font-bold ${k.color}`}>{k.value}</p>
+            <p className="text-xs text-muted mt-1">{k.sub}</p>
           </div>
         ))}
       </div>
@@ -69,8 +136,10 @@ export default function Billing({ facilityId }: Props) {
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.cls}`}>{s.label}</span>
                     <span className="text-[11px] font-mono text-muted">#{inv.id}</span>
                     <span className="ml-auto flex gap-1.5">
-                      {inv.status === "overdue" && <button className="text-xs px-2.5 py-1.5 min-h-8 bg-brand text-white rounded-ctl hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Remind</button>}
-                      <button className="text-xs px-2.5 py-1.5 min-h-8 border border-line rounded-ctl text-muted hover:border-accent hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">View</button>
+                      {inv.status !== "paid" && (
+                        <button onClick={() => remind(inv)} className="text-xs px-2.5 py-1.5 min-h-8 bg-brand text-white rounded-ctl hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Remind</button>
+                      )}
+                      <button onClick={() => setViewing(inv)} className="text-xs px-2.5 py-1.5 min-h-8 border border-line rounded-ctl text-muted hover:border-accent hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">View</button>
                     </span>
                   </div>
                 </div>
@@ -84,35 +153,27 @@ export default function Billing({ facilityId }: Props) {
             <h2 className="font-semibold text-brand">Recurring Tuition Schedules</h2>
           </div>
           <div className="divide-y divide-line">
-            {[
-              { family: "Torres Family", child: "Amelia Torres", room: "Bluebell Infants", amount: 1450, freq: "Monthly", nextDue: "Oct 1, 2026", autopay: true },
-              { family: "Patel Family", child: "Noah Patel", room: "Bluebell Infants", amount: 1450, freq: "Monthly", nextDue: "Oct 1, 2026", autopay: false },
-              { family: "Reyes Family", child: "Sofia Reyes", room: "Sunflower Toddlers", amount: 1250, freq: "Monthly", nextDue: "Past due", autopay: false },
-              { family: "Johnson Family", child: "Liam Johnson", room: "Sunflower Toddlers", amount: 1250, freq: "Monthly", nextDue: "Oct 1, 2026", autopay: true },
-              { family: "Kim Family", child: "Ava Kim", room: "Clover Preschool", amount: 1100, freq: "Monthly", nextDue: "Oct 1, 2026", autopay: true },
-              { family: "Williams Family", child: "James Williams", room: "Clover Preschool", amount: 1100, freq: "Monthly", nextDue: "Oct 1, 2026", autopay: false },
-              { family: "Cruz Family", child: "Isabella Cruz", room: "Maple School-Age", amount: 850, freq: "Monthly", nextDue: "Oct 1, 2026", autopay: true },
-            ].map((s, i) => (
-              <div key={i} className="px-6 py-4 flex items-center justify-between">
+            {schedules.map((s) => (
+              <div key={s.child} className="px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
                 <div>
                   <p className="font-medium text-brand">{s.family}</p>
                   <p className="text-xs text-muted">{s.child} · {s.room}</p>
                 </div>
-                <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 sm:gap-6">
                   <div className="text-right">
                     <p className="font-mono font-semibold text-brand">${s.amount.toLocaleString()}</p>
-                    <p className="text-xs text-muted">{s.freq}</p>
+                    <p className="text-xs text-muted">Monthly</p>
                   </div>
-                  <div className="text-right w-32">
+                  <div className="text-right w-28">
                     <p className={`text-xs font-mono ${s.nextDue === "Past due" ? "text-danger font-bold" : "text-muted"}`}>Next: {s.nextDue}</p>
                   </div>
-                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${s.autopay ? "bg-success-soft text-success" : "bg-surface-2 text-muted"}`}>
-                    {s.autopay ? "AutoPay" : "Manual"}
+                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${s.source === "autopay" ? "bg-success-soft text-success" : s.source === "portal" ? "bg-accent-soft text-accent" : "bg-surface-2 text-muted"}`}>
+                    {s.source === "autopay" ? "AutoPay" : s.source === "portal" ? "Pays in app" : "Pays at office"}
                   </span>
-                  <button className="text-xs text-accent hover:underline">Edit</button>
                 </div>
               </div>
             ))}
+            {schedules.length === 0 && <p className="px-6 py-8 text-center text-sm text-muted">No tuition schedules yet.</p>}
           </div>
         </div>
       )}
@@ -166,14 +227,66 @@ export default function Billing({ facilityId }: Props) {
                 ))}
               </div>
               <div className="bg-surface-2 rounded-card p-3 text-xs text-muted">
-                <span className="font-semibold text-brand">{centerInvoices.length} invoices</span> will be generated based on current tuition schedules.
+                <span className="font-semibold text-brand">{schedules.filter((s) => !centerInvoices.some((i) => i.child === s.child && i.period === generateForm.period)).length} invoices</span> will be generated for {generateForm.period}. Families who already have one for this period are skipped.
               </div>
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={() => setShowGenerate(false)} className="flex-1 py-2 border border-line rounded-ctl text-sm text-muted hover:border-brand transition-colors">Cancel</button>
-              <button onClick={() => setShowGenerate(false)} className="flex-1 py-2 bg-brand text-white rounded-ctl text-sm font-medium hover:bg-brand-hover transition-colors">Generate &amp; Send</button>
+              <button onClick={() => setShowGenerate(false)} className="flex-1 min-h-11 border border-line rounded-ctl text-sm text-muted hover:border-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors">Cancel</button>
+              <button onClick={runGenerate} className="flex-1 min-h-11 bg-brand text-white rounded-ctl text-sm font-medium hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors">Generate &amp; Send</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {viewing && (
+        <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-end" onClick={() => setViewing(null)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="inv-title" className="bg-surface h-full w-full sm:w-96 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 py-5 border-b border-line flex items-start justify-between">
+              <div>
+                <p className="text-xs font-mono uppercase tracking-widest text-muted mb-1">Invoice #{viewing.id}</p>
+                <h2 id="inv-title" className="text-lg font-bold text-brand">{viewing.family}</h2>
+              </div>
+              <button onClick={() => setViewing(null)} aria-label="Close" className="w-10 h-10 flex items-center justify-center rounded-ctl text-muted hover:text-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"><X size={20} aria-hidden /></button>
+            </div>
+            <div className="p-6 space-y-5">
+              <div className="bg-surface-2 rounded-card p-4 text-center">
+                <p className="text-xs font-mono uppercase tracking-widest text-muted">Amount</p>
+                <p className="text-3xl font-bold text-brand mt-1">${viewing.amount.toLocaleString()}</p>
+              </div>
+              {[
+                { label: "Child", value: viewing.child },
+                { label: "Period", value: viewing.period },
+                { label: "Due", value: viewing.dueDate },
+                { label: "Status", value: viewing.status },
+              ].map((r) => (
+                <div key={r.label}>
+                  <p className="text-xs font-mono text-muted uppercase tracking-widest mb-1">{r.label}</p>
+                  <p className="text-sm text-ink capitalize">{r.value}</p>
+                </div>
+              ))}
+              {(() => {
+                const payment = payments.find((p) => p.invoiceId === viewing.id);
+                return payment ? (
+                  <div className="bg-success-soft border border-success rounded-card p-3.5">
+                    <p className="text-sm font-semibold text-success">{payment.source === "autopay" ? "Paid by AutoPay" : payment.source === "portal" ? "Paid in the parent portal" : "Paid at the office"}</p>
+                    <p className="text-xs text-ink mt-0.5">
+                      {payment.method === "ach" ? "Bank transfer" : "Card"} · {new Date(payment.paidAt).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short" })}
+                    </p>
+                  </div>
+                ) : viewing.status !== "paid" ? (
+                  <button onClick={() => { remind(viewing); setViewing(null); }} className="w-full min-h-11 bg-brand text-white rounded-ctl text-sm font-semibold hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent">
+                    Send a reminder
+                  </button>
+                ) : null;
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-brand text-white text-sm font-medium px-4 py-3 rounded-card shadow-lg z-50">
+          ✓ {toast}
         </div>
       )}
 

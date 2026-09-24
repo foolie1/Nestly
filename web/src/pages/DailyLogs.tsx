@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { AlertTriangle, X } from "lucide-react";
 import { useRoster } from "../roster";
 import { LOG_META, LOG_TYPES, useLogs, type LogType } from "../logs";
+import { PhotoPicker, VideoPicker } from "../media";
+import type { VideoClip } from "../data";
+import { AllergyWarning, foodAllergies } from "../components/allergy";
+import IncidentForm from "./IncidentForm";
 
 type Props = { facilityId: string; roomFilter?: string };
 
@@ -11,7 +15,10 @@ export default function DailyLogs({ facilityId, roomFilter }: Props) {
   const [selectedChild, setSelectedChild] = useState<string>("all");
   const [typeFilter, setTypeFilter] = useState<LogType | null>(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showIncident, setShowIncident] = useState(false);
   const [newLog, setNewLog] = useState<{ type: LogType; detail: string; child: string }>({ type: "meal", detail: "", child: "" });
+  const [photos, setPhotos] = useState<string[]>([]);
+  const [videos, setVideos] = useState<VideoClip[]>([]);
   const [toast, setToast] = useState<string | null>(null);
 
   const facilityChildren = children.filter((c) => c.facilityId === facilityId && c.checkedIn && (!roomFilter || c.room === roomFilter));
@@ -26,17 +33,28 @@ export default function DailyLogs({ facilityId, roomFilter }: Props) {
     .filter((e) => !typeFilter || e.type === typeFilter)
     .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
-  const saveEntry = () => {
-    const n = addEntries({ childIds: [newLog.child], type: newLog.type, detail: newLog.detail });
-    if (!n) return;
-    setShowAdd(false);
-    setToast(`${LOG_META[newLog.type].label} logged`);
-    setNewLog({ type: "meal", detail: "", child: "" });
-    setTypeFilter(null);
-    setTimeout(() => setToast(null), 2500);
+  const flash = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2800);
   };
 
-  const canSave = !!newLog.child && newLog.detail.trim().length > 0;
+  const saveEntry = () => {
+    const n = addEntries({ childIds: [newLog.child], type: newLog.type, detail: newLog.detail, media: photos, videos });
+    if (!n) return;
+    setShowAdd(false);
+    flash(`${LOG_META[newLog.type].label} logged`);
+    setNewLog({ type: "meal", detail: "", child: "" });
+    setPhotos([]);
+    setVideos([]);
+    setTypeFilter(null);
+  };
+
+  // A photo entry is worth keeping for the picture alone; everything else
+  // needs a description.
+  const canSave = !!newLog.child && (newLog.detail.trim().length > 0 || photos.length > 0 || videos.length > 0);
+
+  const selectedForEntry = children.find((c) => c.id === newLog.child);
+  const mealRisk = newLog.type === "meal" && selectedForEntry && foodAllergies(selectedForEntry).length > 0 ? [selectedForEntry] : [];
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-5xl mx-auto">
@@ -45,13 +63,18 @@ export default function DailyLogs({ facilityId, roomFilter }: Props) {
           <p className="text-sm font-mono text-muted uppercase tracking-widest mb-1">Daily Activity Log</p>
           <h1 className="text-2xl sm:text-3xl font-bold text-brand">Today's Log</h1>
           <p className="text-muted mt-1">
-            Monday, August 31, 2026 · {entries.length} {entries.length === 1 ? "entry" : "entries"}
+            {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" })} · {entries.length} {entries.length === 1 ? "entry" : "entries"}
             {typeFilter ? ` · ${LOG_META[typeFilter].label} only` : ""}
           </p>
         </div>
-        <button onClick={() => setShowAdd(true)} className="bg-brand text-white text-sm font-semibold px-4 py-2.5 min-h-11 rounded-full hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors">
-          + Log Entry
-        </button>
+        <div className="flex gap-2">
+          <button onClick={() => setShowIncident(true)} className="bg-danger-soft text-danger text-sm font-semibold px-4 py-2.5 min-h-11 rounded-full inline-flex items-center gap-1.5 hover:bg-danger hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors">
+            <AlertTriangle size={16} aria-hidden /> Incident
+          </button>
+          <button onClick={() => setShowAdd(true)} className="bg-brand text-white text-sm font-semibold px-4 py-2.5 min-h-11 rounded-full hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors">
+            + Log Entry
+          </button>
+        </div>
       </div>
 
       {/* Child filter */}
@@ -118,7 +141,26 @@ export default function DailyLogs({ facilityId, roomFilter }: Props) {
                   <span className="font-semibold text-sm text-brand">{entry.childName}</span>
                   <span className="text-xs text-muted">· {entry.room}</span>
                 </div>
+                {entry.title && entry.title !== entry.detail && <p className="text-sm font-semibold text-brand">{entry.title}</p>}
                 <p className="text-sm text-ink">{entry.detail}</p>
+                {entry.media?.length ? (
+                  <ul className="flex flex-wrap gap-2 mt-2">
+                    {entry.media.map((src, i) => (
+                      <li key={i}>
+                        <img src={src} alt={`${entry.childName} — ${entry.title ?? cfg.label} photo ${i + 1}`} className="w-24 h-24 object-cover rounded-card border border-line" />
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                {entry.videos?.length ? (
+                  <ul className="flex flex-wrap gap-2 mt-2">
+                    {entry.videos.map((v, i) => (
+                      <li key={i}>
+                        <video src={v.src} poster={v.poster} controls preload="none" playsInline aria-label={`${entry.childName} — video ${i + 1}, ${Math.round(v.duration)} seconds`} className="w-40 h-28 object-cover rounded-card border border-line bg-black" />
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
                 <p className="text-xs text-muted mt-1">Logged by {entry.loggedBy}</p>
               </div>
             </div>
@@ -174,6 +216,8 @@ export default function DailyLogs({ facilityId, roomFilter }: Props) {
                 </div>
               </div>
 
+              {mealRisk.length > 0 && <AllergyWarning children_={mealRisk} />}
+
               <div>
                 <label htmlFor="log-detail" className="text-xs font-mono uppercase tracking-widest text-muted block mb-1.5">Detail</label>
                 <textarea
@@ -185,6 +229,10 @@ export default function DailyLogs({ facilityId, roomFilter }: Props) {
                   className="w-full border border-line rounded-ctl px-3.5 py-2.5 text-base bg-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-accent resize-none"
                 />
               </div>
+
+              <PhotoPicker value={photos} onChange={setPhotos} max={6} label="Photos (optional)" />
+              <VideoPicker value={videos} onChange={setVideos} max={2} label="Video (optional)" />
+              <p className="text-xs text-muted -mt-2">Families see this entry, and any photos, on their feed straight away.</p>
             </div>
             <div className="flex gap-3 mt-6">
               <button onClick={() => setShowAdd(false)} className="flex-1 min-h-12 rounded-ctl border border-line text-muted hover:border-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-accent transition-colors">Cancel</button>
@@ -192,6 +240,15 @@ export default function DailyLogs({ facilityId, roomFilter }: Props) {
             </div>
           </div>
         </div>
+      )}
+
+      {showIncident && (
+        <IncidentForm
+          facilityId={facilityId}
+          roomFilter={roomFilter}
+          onClose={() => setShowIncident(false)}
+          onSaved={flash}
+        />
       )}
 
       {toast && (

@@ -1,21 +1,26 @@
 import { useState } from "react";
 import { Check, CreditCard, Download, Landmark, Receipt, X } from "lucide-react";
-import { children, invoices } from "../../data";
+import { type Invoice } from "../../data";
 import { useAuth } from "../../auth";
+import { useRoster } from "../../roster";
+import { useBilling } from "../../billing";
 
 export default function ParentBilling() {
   const { user } = useAuth();
-  const kids = children.filter((c) => user?.childIds?.includes(c.id));
-  const mine = invoices.filter((i) => kids.some((k) => k.name === i.child));
-  const [paidIds, setPaidIds] = useState<string[]>([]);
+  const { roster } = useRoster();
+  const { forChildren, markPaid } = useBilling();
+  const kids = roster.filter((c) => user?.childIds?.includes(c.id));
+  // Reads the same store the office does — paying here clears it there too.
+  const mine = forChildren(kids.map((k) => k.name));
   const [autopay, setAutopay] = useState(false);
-  const [payTarget, setPayTarget] = useState<typeof invoices[0] | null>(null);
-  const [method, setMethod] = useState<"card" | "ach">("card");
+  const [payTarget, setPayTarget] = useState<Invoice | null>(null);
+  const [method, setMethod] = useState<"card" | "ach">("ach");
   const [done, setDone] = useState(false);
 
-  const status = (i: typeof invoices[0]) => (paidIds.includes(i.id) ? "paid" : i.status);
-  const balance = mine.filter((i) => status(i) !== "paid").reduce((s, i) => s + i.amount, 0);
-  const tuition = kids.reduce((s, k) => s + (invoices.find((i) => i.child === k.name)?.amount ?? 0), 0);
+  const status = (i: Invoice) => i.status;
+  const open = mine.filter((i) => i.status !== "paid");
+  const balance = open.reduce((s, i) => s + i.amount, 0);
+  const tuition = kids.reduce((s, k) => s + (mine.find((i) => i.child === k.name)?.amount ?? 0), 0);
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto">
@@ -25,7 +30,7 @@ export default function ParentBilling() {
       <div className={`rounded-[calc(var(--t-radius)+0.25rem)] p-5 sm:p-6 mb-4 text-white ${balance > 0 ? "bg-brand" : "bg-accent"}`}>
         <p className="text-xs font-mono uppercase tracking-widest text-white/60">Current balance</p>
         <p className="text-4xl font-bold mt-1">${balance.toLocaleString()}</p>
-        <p className="text-sm text-white/70 mt-1">{balance > 0 ? `${mine.filter((i) => status(i) !== "paid").length} open invoice${mine.filter((i) => status(i) !== "paid").length === 1 ? "" : "s"}` : "You're all paid up 🎉"}</p>
+        <p className="text-sm text-white/70 mt-1">{balance > 0 ? `${open.length} open invoice${open.length === 1 ? "" : "s"}` : "You're all paid up 🎉"}</p>
         {balance > 0 && (
           <button onClick={() => setPayTarget(mine.find((i) => status(i) !== "paid") ?? null)} className="mt-4 w-full sm:w-auto min-h-12 px-6 rounded-card bg-surface text-brand font-semibold hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand">
             Pay ${balance.toLocaleString()} now
@@ -112,7 +117,7 @@ export default function ParentBilling() {
                     </button>
                   ))}
                 </div>
-                <button onClick={() => { setPaidIds((p) => [...p, payTarget.id]); setDone(true); }} className="w-full min-h-12 rounded-card bg-accent text-white font-semibold hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent">
+                <button onClick={() => { markPaid(payTarget.id, method); setDone(true); }} className="w-full min-h-12 rounded-card bg-accent text-white font-semibold hover:bg-accent-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent">
                   Pay ${payTarget.amount.toLocaleString()}
                 </button>
               </>

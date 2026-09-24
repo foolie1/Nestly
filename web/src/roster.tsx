@@ -32,6 +32,13 @@ type Store = {
   enroll: (input: NewChild, leadId?: string) => string;
   /** Toggle presence — used by the check-in board. */
   setCheckedIn: (childId: string, value: boolean) => void;
+  /** Office marks a DH 680 as received, clearing the compliance flag. */
+  setImmunization: (childId: string, value: Child["immunizationStatus"]) => void;
+  /**
+   * Apply an approved form to a child's record. Takes a function rather than
+   * a patch so list fields (medications) can be appended to, not replaced.
+   */
+  updateChild: (childId: string, change: (c: Child) => Partial<Child>) => void;
 };
 
 const Ctx = createContext<Store | null>(null);
@@ -83,8 +90,16 @@ export function RosterProvider({ children: kids }: { children: ReactNode }) {
     setRoster((r) => r.map((c) => (c.id === childId ? { ...c, checkedIn: value } : c)));
   };
 
+  const setImmunization: Store["setImmunization"] = (childId, immunizationStatus) => {
+    setRoster((r) => r.map((c) => (c.id === childId ? { ...c, immunizationStatus } : c)));
+  };
+
+  const updateChild: Store["updateChild"] = (childId, change) => {
+    setRoster((r) => r.map((c) => (c.id === childId ? { ...c, ...change(c) } : c)));
+  };
+
   const value = useMemo<Store>(
-    () => ({ roster, leads, childrenAt, addLead, moveLead, enroll, setCheckedIn }),
+    () => ({ roster, leads, childrenAt, addLead, moveLead, enroll, setCheckedIn, setImmunization, updateChild }),
     [roster, leads],
   );
   return <Ctx.Provider value={value}>{kids}</Ctx.Provider>;
@@ -94,6 +109,22 @@ export function useRoster() {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error("useRoster must be used inside <RosterProvider>");
   return ctx;
+}
+
+/**
+ * How many children are actually in a room right now, and how many are on its
+ * roster. Every ratio display reads this — the seeded `childrenPresent` on the
+ * Room record is a starting position only, and goes stale the moment anyone is
+ * checked in or out.
+ */
+export function roomOccupancy(facilityId: string, roomName: string, roster: Child[]) {
+  const inRoom = roster.filter((c) => c.facilityId === facilityId && c.room === roomName);
+  return { enrolled: inRoom.length, present: inRoom.filter((c) => c.checkedIn).length };
+}
+
+/** Live enrolled headcount for a facility. */
+export function facilityEnrollment(facilityId: string, roster: Child[]) {
+  return roster.filter((c) => c.facilityId === facilityId).length;
 }
 
 /** Rooms at a facility with their current headcount, for the enroll form. */

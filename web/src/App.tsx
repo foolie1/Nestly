@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowLeft,
-  Bell,
   CalendarCheck,
+  CalendarClock,
   ClipboardList,
   CreditCard,
+  FileSignature,
   FolderHeart,
   Home,
   LayoutGrid,
@@ -23,10 +24,13 @@ import {
 import { facilities, type Role } from "./data";
 import { useAuth } from "./auth";
 import { ThemeMenu } from "./theme";
+import { NotificationBell } from "./notifications";
 import Login from "./pages/Login";
 import OperatorDashboard from "./pages/OperatorDashboard";
 import CenterDashboard from "./pages/CenterDashboard";
 import Enrollment from "./pages/Enrollment";
+import Paperwork from "./pages/Paperwork";
+import Tours from "./pages/Tours";
 import CheckIn from "./pages/CheckIn";
 import DailyLogs from "./pages/DailyLogs";
 import Billing from "./pages/Billing";
@@ -43,6 +47,8 @@ export type Page =
   | "operator-dashboard"
   | "center-dashboard"
   | "enrollment"
+  | "paperwork"
+  | "tours"
   | "checkin"
   | "logs"
   | "billing"
@@ -61,6 +67,8 @@ const ADMIN_NAV: NavItem[] = [
     { id: "operator-dashboard", label: "All Centers", Icon: LayoutGrid, group: "Overview" },
     { id: "center-dashboard", label: "Center Dashboard", Icon: Home, group: "Overview" },
     { id: "enrollment", label: "Enrollment", Icon: UserPlus, group: "Operations" },
+    { id: "tours", label: "Tours", Icon: CalendarClock, group: "Operations" },
+    { id: "paperwork", label: "Paperwork", Icon: FileSignature, group: "Operations" },
     { id: "checkin", label: "Check-in / Out", Icon: CalendarCheck, group: "Operations" },
     { id: "logs", label: "Daily Logs", Icon: ClipboardList, group: "Operations" },
     { id: "billing", label: "Billing", Icon: CreditCard, group: "Finance" },
@@ -164,6 +172,8 @@ function Shell({ role }: { role: Role }) {
       {page === "operator-dashboard" && <OperatorDashboard onSelectFacility={handleSelectFacility} onNav={handleNav} />}
       {page === "center-dashboard" && <CenterDashboard facilityId={facilityId} onNav={handleNav} />}
       {page === "enrollment" && <Enrollment facilityId={facilityId} />}
+      {page === "tours" && <Tours facilityId={facilityId} />}
+      {page === "paperwork" && <Paperwork facilityId={facilityId} />}
       {page === "checkin" && <CheckIn facilityId={facilityId} roomFilter={user?.room} />}
       {page === "logs" && <DailyLogs facilityId={facilityId} roomFilter={user?.room} />}
       {page === "billing" && <Billing facilityId={facilityId} />}
@@ -334,10 +344,7 @@ function Shell({ role }: { role: Role }) {
               </div>
             )}
             <ThemeMenu />
-            <button aria-label="Notifications, 1 unread" className="relative w-11 h-11 flex items-center justify-center text-muted hover:text-brand rounded-ctl hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-              <Bell size={20} aria-hidden />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-danger rounded-full" />
-            </button>
+            <NotificationBell facilityId={currentFacility.id} onNav={handleNav} />
             {!isParent && (
               <div className="hidden sm:flex items-center gap-1.5 text-xs font-mono text-muted bg-surface-2 px-2.5 py-1.5 rounded-ctl" title="Sync status">
                 <Wifi size={14} className="text-success" aria-hidden /> Online

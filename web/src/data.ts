@@ -21,6 +21,39 @@ export type Room = {
   capacity: number;
 };
 
+/**
+ * A child's allergy. This is life-safety information: it is surfaced on the
+ * classroom roster, at check-in, and — loudly — anywhere a meal is logged.
+ */
+export type Allergy = {
+  id: string;
+  /** What they react to: "Peanuts", "Amoxicillin", "Bee stings". */
+  name: string;
+  kind: "food" | "medication" | "environmental" | "other";
+  severity: "severe" | "moderate" | "mild";
+  /** What a reaction looks like, so staff recognize one starting. */
+  reaction: string;
+  /** What staff do about it — the line that has to be readable in a hurry. */
+  response: string;
+};
+
+/**
+ * A medication the center is authorized to administer. Florida requires a
+ * signed parent authorization on file, which is what authorizedUntil tracks.
+ */
+export type Medication = {
+  id: string;
+  name: string;
+  dose: string;
+  /** "Twice daily with meals", "As needed for wheezing". */
+  schedule: string;
+  route: string;
+  prescriber: string;
+  /** Authorization expiry — past this date staff must not administer. */
+  authorizedUntil: string;
+  notes?: string;
+};
+
 export type Child = {
   id: string;
   name: string;
@@ -36,7 +69,22 @@ export type Child = {
   tuitionStatus: "current" | "overdue" | "pending";
   /** Set when an owner/director enrolled them into a room already at capacity. */
   enrolledOverCapacity?: boolean;
+  allergies?: Allergy[];
+  medications?: Medication[];
+  /** Non-allergy food rules — vegetarian, no pork, whole milk only. */
+  dietaryNotes?: string;
+  /**
+   * From the approved photo & media consent form. Absent means the family
+   * hasn't completed it, which is not the same as "no".
+   */
+  photoConsent?: "granted" | "feed-only" | "denied";
+  /** From the approved emergency contacts form. */
+  emergencyContacts?: EmergencyContact[];
+  /** Date the current enrollment agreement was approved by the office. */
+  agreementSigned?: string;
 };
+
+export type EmergencyContact = { name: string; relationship: string; phone: string };
 
 export type Staff = {
   id: string;
@@ -66,19 +114,62 @@ export type Invoice = {
   period: string;
 };
 
+export const INCIDENT_TYPES = [
+  "Minor Injury",
+  "Head Injury",
+  "Behavioral Incident",
+  "Illness",
+  "Allergic Reaction",
+  "Medication Error",
+  "Ratio Alert",
+  "Other",
+] as const;
+
 export type Incident = {
   id: string;
+  childId?: string;
   childName: string;
   facilityId: string;
+  room?: string;
   date: string;
+  /** Time of the incident itself, not of the report. */
+  time?: string;
   type: string;
+  /** Where it happened — playground, Clover room, hallway. */
+  location?: string;
   description: string;
+  /** First aid or other response given. */
+  actionTaken?: string;
+  witnesses?: string;
   reportedBy: string;
   guardianNotified: boolean;
+  /** How and when the guardian was told. */
+  notifiedMethod?: "in-person" | "phone" | "message";
+  notifiedAt?: string;
   guardianSigned: boolean;
   severity: "low" | "medium" | "high";
+  /** PNG data URL — the reporting staff member's signature. */
+  staffSignature?: string;
+  guardianSignature?: string;
 };
 
+export type LogType =
+  | "meal"
+  | "nap"
+  | "diaper"
+  | "bathroom"
+  | "note"
+  | "incident"
+  | "photo"
+  | "mood"
+  | "learning"
+  | "medication";
+
+/**
+ * One thing that happened to one child today. This is the single source for
+ * both the staff daily log and the parent activity feed — a teacher writes it
+ * once and the family sees it.
+ */
 export type LogEntry = {
   id: string;
   childId: string;
@@ -86,9 +177,28 @@ export type LogEntry = {
   facilityId: string;
   room: string;
   timestamp: string;
-  type: "meal" | "nap" | "diaper" | "bathroom" | "note" | "incident";
+  type: LogType;
+  /** Short heading for the parent feed. Falls back to the type label. */
+  title?: string;
   detail: string;
   loggedBy: string;
+  /**
+   * Photos attached to the entry, as data URLs. They live in memory only —
+   * persisting these to object storage is the backend's job.
+   */
+  media?: string[];
+  /** Short clips — ten seconds at most. */
+  videos?: VideoClip[];
+};
+
+export type VideoClip = {
+  /** Object URL for the recorded or uploaded clip. Memory only, like photos. */
+  src: string;
+  /** A still from the first frame, so feeds don't have to load video to show something. */
+  poster?: string;
+  /** Seconds. */
+  duration: number;
+  mime: string;
 };
 
 export type EnrollmentLead = {
@@ -160,17 +270,78 @@ export const facilities: Facility[] = [
 
 // ─── Children ─────────────────────────────────────────────────
 export const children: Child[] = [
-  { id: "c1", name: "Amelia Torres", dob: "2024-02-14", room: "Bluebell Infants", facilityId: "f1", status: "active", guardian: "Maria Torres", guardianPhone: "(954) 555-0142", immunizationStatus: "current", checkedIn: true, enrollmentDate: "2024-08-01", tuitionStatus: "current" },
-  { id: "c2", name: "Noah Patel", dob: "2024-05-20", room: "Bluebell Infants", facilityId: "f1", status: "active", guardian: "Priya Patel", guardianPhone: "(954) 555-0198", immunizationStatus: "expires-soon", checkedIn: true, enrollmentDate: "2024-09-01", tuitionStatus: "current" },
+  {
+    id: "c1", name: "Amelia Torres", dob: "2024-02-14", room: "Bluebell Infants", facilityId: "f1", status: "active", guardian: "Maria Torres", guardianPhone: "(954) 555-0142", immunizationStatus: "current", checkedIn: true, enrollmentDate: "2024-08-01", tuitionStatus: "current",
+    allergies: [
+      { id: "a1", name: "Egg", kind: "food", severity: "mild", reaction: "Redness around the mouth, mild hives", response: "Wash the area, offer water, log it and tell Maria at pickup." },
+    ],
+    dietaryNotes: "Whole milk only — no soy formula.",
+  },
+  {
+    id: "c2", name: "Noah Patel", dob: "2024-05-20", room: "Bluebell Infants", facilityId: "f1", status: "active", guardian: "Priya Patel", guardianPhone: "(954) 555-0198", immunizationStatus: "expires-soon", checkedIn: true, enrollmentDate: "2024-09-01", tuitionStatus: "current",
+    allergies: [
+      { id: "a2", name: "Cow's milk protein", kind: "food", severity: "severe", reaction: "Vomiting, swelling, trouble breathing", response: "Hypoallergenic formula only (labeled bottle in the fridge). If he reacts: EpiPen Jr in the red pouch, then call 911, then Priya." },
+    ],
+    medications: [
+      { id: "m1", name: "EpiPen Jr", dose: "0.15 mg auto-injector", schedule: "Emergency use only", route: "Intramuscular, outer thigh", prescriber: "Dr. A. Whitfield", authorizedUntil: "2027-03-01", notes: "Red pouch on the Bluebell shelf. Call 911 immediately after use." },
+    ],
+    dietaryNotes: "No dairy of any kind, including in baked goods.",
+  },
   { id: "c3", name: "Sofia Reyes", dob: "2023-01-10", room: "Sunflower Toddlers", facilityId: "f1", status: "active", guardian: "Carlos Reyes", guardianPhone: "(954) 555-0267", immunizationStatus: "current", checkedIn: false, enrollmentDate: "2023-07-15", tuitionStatus: "overdue" },
   { id: "c4", name: "Liam Johnson", dob: "2022-11-03", room: "Sunflower Toddlers", facilityId: "f1", status: "active", guardian: "Sarah Johnson", guardianPhone: "(954) 555-0311", immunizationStatus: "current", checkedIn: true, enrollmentDate: "2023-02-01", tuitionStatus: "current" },
-  { id: "c5", name: "Ava Kim", dob: "2021-06-22", room: "Clover Preschool", facilityId: "f1", status: "active", guardian: "Mina Kim", guardianPhone: "(954) 555-0489", immunizationStatus: "current", checkedIn: true, enrollmentDate: "2022-08-15", tuitionStatus: "current" },
-  { id: "c6", name: "James Williams", dob: "2021-03-15", room: "Clover Preschool", facilityId: "f1", status: "active", guardian: "Denise Williams", guardianPhone: "(954) 555-0502", immunizationStatus: "missing", checkedIn: true, enrollmentDate: "2022-09-01", tuitionStatus: "pending" },
+  {
+    id: "c5", name: "Ava Kim", dob: "2021-06-22", room: "Clover Preschool", facilityId: "f1", status: "active", guardian: "Mina Kim", guardianPhone: "(954) 555-0489", immunizationStatus: "current", checkedIn: true, enrollmentDate: "2022-08-15", tuitionStatus: "current",
+    allergies: [
+      { id: "a3", name: "Peanuts & tree nuts", kind: "food", severity: "severe", reaction: "Hives, swelling of the lips and tongue, wheezing", response: "EpiPen in her backpack, then call 911, then Mina. Do not wait to see if it worsens." },
+      { id: "a4", name: "Bee stings", kind: "environmental", severity: "moderate", reaction: "Large local swelling", response: "Cold pack, monitor for 30 minutes, call Mina." },
+    ],
+    medications: [
+      { id: "m2", name: "EpiPen", dose: "0.3 mg auto-injector", schedule: "Emergency use only", route: "Intramuscular, outer thigh", prescriber: "Dr. L. Moreno", authorizedUntil: "2026-11-15", notes: "Front pocket of her backpack. Goes outside with the class." },
+    ],
+    dietaryNotes: "Nut-free table. Check every label, including snacks brought by other families.",
+  },
+  {
+    id: "c6", name: "James Williams", dob: "2021-03-15", room: "Clover Preschool", facilityId: "f1", status: "active", guardian: "Denise Williams", guardianPhone: "(954) 555-0502", immunizationStatus: "missing", checkedIn: true, enrollmentDate: "2022-09-01", tuitionStatus: "pending",
+    medications: [
+      { id: "m3", name: "Albuterol inhaler", dose: "2 puffs with spacer", schedule: "As needed for coughing or wheezing, max every 4 hours", route: "Inhaled", prescriber: "Dr. S. Patel", authorizedUntil: "2026-09-30", notes: "Spacer is in the blue bin. Log every use and text Denise the same day." },
+    ],
+  },
   { id: "c7", name: "Isabella Cruz", dob: "2018-09-01", room: "Maple School-Age", facilityId: "f1", status: "active", guardian: "Roberto Cruz", guardianPhone: "(954) 555-0634", immunizationStatus: "current", checkedIn: false, enrollmentDate: "2021-08-01", tuitionStatus: "current" },
   { id: "c8", name: "Oliver Nguyen", dob: "2024-03-05", room: "Daisy Infants", facilityId: "f2", status: "active", guardian: "Lan Nguyen", guardianPhone: "(561) 555-0123", immunizationStatus: "current", checkedIn: true, enrollmentDate: "2024-09-01", tuitionStatus: "current" },
   { id: "c9", name: "Emma Garcia", dob: "2022-08-18", room: "Tulip Toddlers", facilityId: "f2", status: "active", guardian: "Luis Garcia", guardianPhone: "(561) 555-0244", immunizationStatus: "expires-soon", checkedIn: true, enrollmentDate: "2023-04-01", tuitionStatus: "current" },
   { id: "c10", name: "Ethan Brown", dob: "2021-12-01", room: "Rose Preschool", facilityId: "f2", status: "active", guardian: "Karen Brown", guardianPhone: "(561) 555-0388", immunizationStatus: "current", checkedIn: false, enrollmentDate: "2023-01-10", tuitionStatus: "overdue" },
 ];
+
+// Paperwork already approved for the seeded children. Mirrors the seeded
+// submissions in forms.tsx — approval is what writes these onto a child, so
+// the two have to agree at startup.
+{
+  const photo: Record<string, Child["photoConsent"]> = { c1: "granted", c3: "granted", c5: "granted", c7: "granted", c8: "granted" };
+  const contacts: Record<string, EmergencyContact[]> = {
+    c1: [
+      { name: "Maria Torres", relationship: "Mother", phone: "(954) 555-0142" },
+      { name: "Daniel Torres", relationship: "Father", phone: "(954) 555-0143" },
+      { name: "Carmen Torres", relationship: "Grandmother", phone: "(954) 555-0177" },
+    ],
+    c2: [
+      { name: "Priya Patel", relationship: "Mother", phone: "(954) 555-0198" },
+      { name: "Arjun Patel", relationship: "Father", phone: "(954) 555-0199" },
+      { name: "Meera Shah", relationship: "Aunt", phone: "(954) 555-0233" },
+    ],
+  };
+  const noAgreement = ["c1", "c9"];
+  for (const c of children) {
+    c.photoConsent = photo[c.id];
+    // Sofia's emergency form was returned, so nothing from it is on file.
+    if (c.id !== "c3") {
+      c.emergencyContacts = contacts[c.id] ?? [
+        { name: c.guardian, relationship: "Parent", phone: c.guardianPhone },
+        { name: `${c.name.split(" ")[1]} family friend`, relationship: "Family friend", phone: "(954) 555-0300" },
+      ];
+    }
+    if (!noAgreement.includes(c.id)) c.agreementSigned = "2026-08-15";
+  }
+}
 
 // ─── Enrollment Leads ─────────────────────────────────────────
 export const enrollmentLeads: EnrollmentLead[] = [
@@ -257,16 +428,37 @@ export const incidents: Incident[] = [
 ];
 
 // ─── Daily Logs ───────────────────────────────────────────────
+/**
+ * Seed activity for today. Staff write here and families read the same rows —
+ * there is no second feed. `title` is the heading a parent sees; `detail` is
+ * the body both sides see.
+ */
 export const logEntries: LogEntry[] = [
-  { id: "l1", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "08:02", type: "meal", detail: "4 oz formula, finished completely", loggedBy: "Denise Morales" },
-  { id: "l2", childId: "c2", childName: "Noah Patel", facilityId: "f1", room: "Bluebell Infants", timestamp: "08:15", type: "diaper", detail: "Wet diaper, changed", loggedBy: "Rashida Okafor" },
-  { id: "l3", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "09:30", type: "nap", detail: "Nap started — swaddled", loggedBy: "Denise Morales" },
-  { id: "l4", childId: "c3", childName: "Sofia Reyes", facilityId: "f1", room: "Sunflower Toddlers", timestamp: "08:45", type: "meal", detail: "Half a banana, crackers, juice — ate well", loggedBy: "Gloria Sánchez" },
-  { id: "l5", childId: "c4", childName: "Liam Johnson", facilityId: "f1", room: "Sunflower Toddlers", timestamp: "09:00", type: "bathroom", detail: "Used potty, successful", loggedBy: "Gloria Sánchez" },
-  { id: "l6", childId: "c5", childName: "Ava Kim", facilityId: "f1", room: "Clover Preschool", timestamp: "09:10", type: "note", detail: "Reported stomachache, monitoring. Ate breakfast normally.", loggedBy: "Marcus Webb" },
-  { id: "l7", childId: "c2", childName: "Noah Patel", facilityId: "f1", room: "Bluebell Infants", timestamp: "10:00", type: "meal", detail: "5 oz formula, finished", loggedBy: "Rashida Okafor" },
-  { id: "l8", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "10:45", type: "nap", detail: "Woke from nap — alert and happy", loggedBy: "Denise Morales" },
-  { id: "l9", childId: "c6", childName: "James Williams", facilityId: "f1", room: "Clover Preschool", timestamp: "10:20", type: "incident", detail: "Small fall during circle time — no injury observed, monitored for 15 min", loggedBy: "Marcus Webb" },
+  // Bluebell Infants — Amelia (c1)
+  { id: "l1", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "07:52", type: "note", title: "Checked in", detail: "Dropped off by Maria Torres · signed", loggedBy: "Denise Morales" },
+  { id: "l2", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "08:02", type: "meal", title: "Bottle · 4 oz formula", detail: "Finished completely", loggedBy: "Denise Morales" },
+  { id: "l3", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "08:40", type: "mood", title: "Happy & playful", detail: "Enjoyed tummy time with the sensory mat", loggedBy: "Rashida Okafor" },
+  { id: "l4", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "09:30", type: "nap", title: "Nap started", detail: "Swaddled, fell asleep in about 5 minutes", loggedBy: "Denise Morales" },
+  { id: "l5", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "10:45", type: "nap", title: "Woke from nap", detail: "1 hr 15 min · alert and happy", loggedBy: "Denise Morales" },
+  { id: "l6", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "11:05", type: "photo", title: "Music time", detail: "Amelia loved the shaker eggs today!", loggedBy: "Rashida Okafor" },
+  { id: "l7", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "11:30", type: "diaper", title: "Diaper · wet", detail: "Changed, cream applied", loggedBy: "Denise Morales" },
+  { id: "l8", childId: "c1", childName: "Amelia Torres", facilityId: "f1", room: "Bluebell Infants", timestamp: "12:10", type: "learning", title: "Reaching & grasping", detail: "Reached for and held a soft block with both hands — FL Early Learning Standard: Motor Development", loggedBy: "Denise Morales" },
+
+  // Bluebell Infants — Noah (c2)
+  { id: "l9", childId: "c2", childName: "Noah Patel", facilityId: "f1", room: "Bluebell Infants", timestamp: "08:10", type: "note", title: "Checked in", detail: "Dropped off by Priya Patel · signed", loggedBy: "Rashida Okafor" },
+  { id: "l10", childId: "c2", childName: "Noah Patel", facilityId: "f1", room: "Bluebell Infants", timestamp: "08:15", type: "diaper", title: "Diaper · wet", detail: "Changed", loggedBy: "Rashida Okafor" },
+  { id: "l11", childId: "c2", childName: "Noah Patel", facilityId: "f1", room: "Bluebell Infants", timestamp: "10:00", type: "meal", title: "Bottle · 5 oz", detail: "Hypoallergenic formula from his labeled bottle — finished", loggedBy: "Rashida Okafor" },
+  { id: "l12", childId: "c2", childName: "Noah Patel", facilityId: "f1", room: "Bluebell Infants", timestamp: "10:20", type: "photo", title: "Outdoor stroll", detail: "Fresh air in the shaded courtyard", loggedBy: "Denise Morales" },
+  { id: "l13", childId: "c2", childName: "Noah Patel", facilityId: "f1", room: "Bluebell Infants", timestamp: "11:40", type: "nap", title: "Nap started", detail: "Settled quickly", loggedBy: "Rashida Okafor" },
+
+  // Sunflower Toddlers
+  { id: "l14", childId: "c3", childName: "Sofia Reyes", facilityId: "f1", room: "Sunflower Toddlers", timestamp: "08:45", type: "meal", title: "Breakfast", detail: "Half a banana, crackers, juice — ate well", loggedBy: "Gloria Sánchez" },
+  { id: "l15", childId: "c4", childName: "Liam Johnson", facilityId: "f1", room: "Sunflower Toddlers", timestamp: "09:00", type: "bathroom", title: "Used the potty", detail: "Successful — very proud of himself", loggedBy: "Gloria Sánchez" },
+
+  // Clover Preschool
+  { id: "l16", childId: "c5", childName: "Ava Kim", facilityId: "f1", room: "Clover Preschool", timestamp: "09:10", type: "note", title: "Tummy ache", detail: "Reported a stomachache, monitoring. Ate breakfast normally.", loggedBy: "Marcus Webb" },
+  { id: "l17", childId: "c6", childName: "James Williams", facilityId: "f1", room: "Clover Preschool", timestamp: "10:20", type: "incident", title: "Small fall", detail: "Small fall during circle time — no injury observed, monitored for 15 min", loggedBy: "Marcus Webb" },
+  { id: "l18", childId: "c6", childName: "James Williams", facilityId: "f1", room: "Clover Preschool", timestamp: "10:35", type: "medication", title: "Albuterol inhaler · 2 puffs", detail: "Slight wheeze after outdoor play. 2 puffs with spacer, settled within 10 minutes.", loggedBy: "Marcus Webb" },
 ];
 
 // ─── Auth / Roles ─────────────────────────────────────────────
@@ -352,30 +544,5 @@ export const authorizedPickups: AuthorizedPickup[] = [
   { id: "p5", childId: "c2", name: "Arjun Patel", relationship: "Father", phone: "(954) 555-0199", isPrimary: true },
 ];
 
-export type FeedItem = {
-  id: string;
-  childId: string;
-  time: string;
-  type: "checkin" | "meal" | "nap" | "diaper" | "bathroom" | "photo" | "note" | "mood" | "learning";
-  title: string;
-  detail?: string;
-  by: string;
-  /** emoji stand-in for a photo in the demo */
-  photo?: string;
-};
-
-export const feed: FeedItem[] = [
-  { id: "fd1", childId: "c1", time: "07:52", type: "checkin", title: "Checked in", detail: "Dropped off by Maria Torres · signed", by: "Denise Morales" },
-  { id: "fd2", childId: "c1", time: "08:02", type: "meal", title: "Bottle · 4 oz formula", detail: "Finished completely", by: "Denise Morales" },
-  { id: "fd3", childId: "c1", time: "08:40", type: "mood", title: "Happy & playful", detail: "Enjoyed tummy time with the sensory mat", by: "Rashida Okafor" },
-  { id: "fd4", childId: "c1", time: "09:30", type: "nap", title: "Nap started", detail: "Swaddled, fell asleep in about 5 minutes", by: "Denise Morales" },
-  { id: "fd5", childId: "c1", time: "10:45", type: "nap", title: "Woke from nap", detail: "1 hr 15 min · alert and happy", by: "Denise Morales" },
-  { id: "fd6", childId: "c1", time: "11:05", type: "photo", title: "Music time 🎶", detail: "Amelia loved the shaker eggs today!", by: "Rashida Okafor", photo: "🎵" },
-  { id: "fd7", childId: "c1", time: "11:30", type: "diaper", title: "Diaper · wet", detail: "Changed, cream applied", by: "Denise Morales" },
-  { id: "fd8", childId: "c1", time: "12:10", type: "learning", title: "Reaching & grasping", detail: "Reached for and held a soft block with both hands — FL Early Learning Standard: Motor Development", by: "Denise Morales" },
-  { id: "fd9", childId: "c2", time: "08:10", type: "checkin", title: "Checked in", detail: "Dropped off by Priya Patel · signed", by: "Rashida Okafor" },
-  { id: "fd10", childId: "c2", time: "08:15", type: "diaper", title: "Diaper · wet", detail: "Changed", by: "Rashida Okafor" },
-  { id: "fd11", childId: "c2", time: "10:00", type: "meal", title: "Bottle · 5 oz formula", detail: "Finished", by: "Rashida Okafor" },
-  { id: "fd12", childId: "c2", time: "10:20", type: "photo", title: "Outdoor stroll ☀️", detail: "Fresh air in the shaded courtyard", by: "Denise Morales", photo: "🌳" },
-  { id: "fd13", childId: "c2", time: "11:40", type: "nap", title: "Nap started", by: "Rashida Okafor" },
-];
+// The parent activity feed is not a separate data source — it reads the same
+// `logEntries` store the teachers write to. See logs.tsx.

@@ -1,20 +1,34 @@
 import { useRef, useState } from "react";
-import { AlertTriangle, Check, Clock, FileText, Paperclip, Phone, Plus, ShieldCheck, Star, Trash2, UserRound, X } from "lucide-react";
-import { authorizedPickups, childDocuments, children, type AuthorizedPickup } from "../../data";
+import { AlertTriangle, Check, ChevronRight, Clock, FileText, Paperclip, Phone, Pill, Plus, ShieldCheck, Star, Trash2, UserRound, X } from "lucide-react";
+import { authorizedPickups, type AuthorizedPickup } from "../../data";
+import { useRoster } from "../../roster";
+import { REQUIRED_FORMS, TEMPLATE, useForms, type FormTemplate, type Submission } from "../../forms";
+import { AllergyDetail } from "../../components/allergy";
+import { SubmissionView } from "../../components/SubmissionView";
 import { ChildSwitcher, useSelectedChild } from "./childSwitcher";
+import FormFill from "./FormFill";
 
 type Upload = { docId: string; fileName: string; on: string };
+
+const shortDate = (iso?: string) => (iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "");
 
 const MAX_MB = 10;
 const ACCEPT = "image/png,image/jpeg,image/heic,application/pdf";
 
 export default function ParentFamily() {
+  const { roster } = useRoster();
   const [childId, setChildId] = useSelectedChild();
-  const child = children.find((c) => c.id === childId) ?? children[0];
-  const docs = childDocuments.filter((d) => d.childId === child.id);
+  const child = roster.find((c) => c.id === childId) ?? roster[0];
+  const { statusFor, latest, forChild } = useForms();
 
-  const [signed, setSigned] = useState<string[]>([]);
   const [uploads, setUploads] = useState<Upload[]>([]);
+  const [filling, setFilling] = useState<{ template: FormTemplate; previous?: Submission } | null>(null);
+  const [viewing, setViewing] = useState<Submission | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const flash = (m: string) => { setToast(m); setTimeout(() => setToast(null), 3000); };
+
+  const done = REQUIRED_FORMS.filter((t) => statusFor(child.id, t.id) === "approved").length;
+  const medSubs = forChild(child.id).filter((x) => x.formId === "medication");
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [added, setAdded] = useState<AuthorizedPickup[]>([]);
   const [pendingIds, setPendingIds] = useState<string[]>([]);
@@ -25,8 +39,6 @@ export default function ParentFamily() {
 
   const pickups = [...authorizedPickups.filter((p) => p.childId === child.id), ...added.filter((p) => p.childId === child.id)];
   const uploadFor = (docId: string) => uploads.find((u) => u.docId === docId);
-  const docStatus = (d: (typeof docs)[0]) =>
-    signed.includes(d.id) || uploadFor(d.id) ? "on-file" : d.status;
 
   const chooseFile = (docId: string) => {
     setUploadError(null);
@@ -67,65 +79,165 @@ export default function ParentFamily() {
         </div>
         <dl className="grid grid-cols-2 gap-3 mt-4 text-sm">
           <div className="bg-surface-2 rounded-card p-3"><dt className="text-xs text-muted">Enrolled since</dt><dd className="font-medium text-brand">{child.enrollmentDate}</dd></div>
-          <div className="bg-surface-2 rounded-card p-3"><dt className="text-xs text-muted">Allergies</dt><dd className="font-medium text-brand">None on file</dd></div>
+          <div className="bg-surface-2 rounded-card p-3"><dt className="text-xs text-muted">Room</dt><dd className="font-medium text-brand">{child.room}</dd></div>
         </dl>
-        <p className="text-xs text-muted mt-3">To change allergies, medications, or your child's room, send the office a request — teachers can't edit these.</p>
+
+        <div className="mt-4 border-t border-line pt-4">
+          <h3 className="text-xs font-mono uppercase tracking-widest text-muted mb-2">Allergies</h3>
+          <AllergyDetail child={child} />
+          {child.dietaryNotes && (
+            <p className="text-xs text-muted mt-2"><span className="font-semibold text-brand">Dietary notes:</span> {child.dietaryNotes}</p>
+          )}
+        </div>
+
+        {child.medications?.length ? (
+          <div className="mt-4 border-t border-line pt-4">
+            <h3 className="text-xs font-mono uppercase tracking-widest text-muted mb-2">Medications we're authorized to give</h3>
+            <ul className="space-y-2">
+              {child.medications.map((m) => (
+                <li key={m.id} className="border-l-2 border-accent pl-3">
+                  <p className="text-sm font-semibold text-brand">{m.name} · {m.dose}</p>
+                  <p className="text-xs text-muted mt-0.5">{m.schedule} · {m.route} · {m.prescriber}</p>
+                  <p className="text-xs text-muted">Authorization on file through {m.authorizedUntil}</p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+
+        <p className="text-xs text-muted mt-4">To change allergies or medications, use the forms below — the office reviews every change before it reaches the classroom. For a room change, message the office.</p>
       </div>
 
-      {/* Documents */}
+      {/* Paperwork */}
       <section aria-labelledby="docs-h" className="mb-6">
-        <h2 id="docs-h" className="font-semibold text-brand mb-3">Documents &amp; forms</h2>
-
-        {uploadError && (
-          <div role="alert" className="mb-2 bg-danger-soft border border-danger-line text-danger-strong text-sm rounded-card px-4 py-3">{uploadError}</div>
-        )}
+        <div className="flex items-baseline justify-between gap-3 mb-1">
+          <h2 id="docs-h" className="font-semibold text-brand">Paperwork</h2>
+          <span className="text-xs font-mono text-muted">{done} of {REQUIRED_FORMS.length} required on file</span>
+        </div>
+        <p className="text-sm text-muted mb-3">Fill these in here — no printing, no scanning. The office reviews each one before it's added to {child.name.split(" ")[0]}'s record.</p>
 
         <ul className="space-y-2">
-          {docs.map((d) => {
-            const up = uploadFor(d.id);
-            const s = docStatus(d);
-            const style = up
-              ? { bg: "bg-info-soft", fg: "text-info", Icon: Clock, label: `Uploaded ${up.on} · pending office review` }
-              : s === "on-file"
-                ? { bg: "bg-success-soft", fg: "text-success", Icon: Check, label: `On file${d.date ? ` · ${d.date}` : ""}` }
-                : s === "needs-signature"
-                  ? { bg: "bg-warning-soft", fg: "text-warning", Icon: FileText, label: "Needs your signature" }
-                  : s === "expires-soon"
-                    ? { bg: "bg-warning-soft", fg: "text-warning", Icon: AlertTriangle, label: `Expires ${d.date} · upload a new one` }
-                    : { bg: "bg-danger-soft", fg: "text-danger", Icon: AlertTriangle, label: d.required ? "Missing · required" : "Not on file · optional" };
-            const canUpload = !up && (s === "missing" || s === "expires-soon");
+          {REQUIRED_FORMS.map((t) => {
+            const st = statusFor(child.id, t.id);
+            const last = latest(child.id, t.id);
+            const style =
+              st === "approved"
+                ? { bg: "bg-success-soft", fg: "text-success", Icon: Check, label: `On file · ${shortDate(last?.reviewedAt)}` }
+                : st === "submitted"
+                  ? { bg: "bg-info-soft", fg: "text-info", Icon: Clock, label: "Sent · the office is reviewing it" }
+                  : st === "returned"
+                    ? { bg: "bg-warning-soft", fg: "text-warning", Icon: AlertTriangle, label: "Sent back — needs a change" }
+                    : { bg: "bg-danger-soft", fg: "text-danger", Icon: FileText, label: `Not started · about ${t.minutes} min` };
+            const action =
+              st === "not-started" ? { text: "Start", primary: true, run: () => setFilling({ template: t }) }
+              : st === "returned" ? { text: "Fix", primary: true, run: () => setFilling({ template: t, previous: last }) }
+              : st === "submitted" ? { text: "View", primary: false, run: () => last && setViewing(last) }
+              : { text: "Update", primary: false, run: () => setFilling({ template: t, previous: last }) };
             return (
-              <li key={d.id} className="bg-surface border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4 flex items-center gap-3">
-                <div className={`w-11 h-11 rounded-card flex items-center justify-center flex-shrink-0 ${style.bg} ${style.fg}`}><style.Icon size={22} aria-hidden /></div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-brand text-sm sm:text-base">{d.name}{d.formCode && <span className="text-xs font-mono text-muted ml-2">{d.formCode}</span>}</p>
-                  <p className={`text-xs ${style.fg}`}>{style.label}</p>
-                  {up && (
-                    <p className="text-xs text-muted mt-1 flex items-center gap-1 min-w-0">
-                      <Paperclip size={12} className="flex-shrink-0" aria-hidden />
-                      <span className="truncate">{up.fileName}</span>
-                      <button onClick={() => setUploads((u) => u.filter((x) => x.docId !== d.id))} className="ml-1 text-danger hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-danger rounded flex-shrink-0">Remove</button>
-                    </p>
-                  )}
-                </div>
-                {s === "needs-signature" && (
-                  <button onClick={() => setSigned((x) => [...x, d.id])} className="text-xs font-semibold px-3 py-2 rounded-ctl bg-brand text-white min-h-10 flex-shrink-0 hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Sign</button>
-                )}
-                {canUpload && (
-                  <button onClick={() => chooseFile(d.id)} className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-ctl border border-line text-brand min-h-10 flex-shrink-0 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                    <Paperclip size={14} aria-hidden /> Upload
+              <li key={t.id} className="bg-surface border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4">
+                <div className="flex items-center gap-3">
+                  <div className={`w-11 h-11 rounded-card flex items-center justify-center flex-shrink-0 ${style.bg} ${style.fg}`}><style.Icon size={22} aria-hidden /></div>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-brand text-sm sm:text-base">{t.name}</p>
+                    <p className={`text-xs ${style.fg}`}>{style.label}</p>
+                  </div>
+                  <button
+                    onClick={action.run}
+                    className={`inline-flex items-center gap-1 text-sm font-semibold px-3.5 rounded-ctl min-h-11 flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${action.primary ? "bg-brand text-white hover:bg-brand-hover" : "border border-line text-brand hover:border-accent"}`}
+                  >
+                    {action.text} {action.primary && <ChevronRight size={16} aria-hidden />}
                   </button>
+                </div>
+                {st === "returned" && last?.reviewNote && (
+                  <p className="text-sm text-ink bg-warning-soft rounded-card px-3.5 py-2.5 mt-3"><span className="font-semibold text-warning-strong">The office says:</span> {last.reviewNote}</p>
+                )}
+                {st === "approved" && last && (
+                  <button onClick={() => setViewing(last)} className="text-xs text-accent font-medium mt-2 ml-14 min-h-8 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-accent rounded">View what you sent</button>
                 )}
               </li>
             );
           })}
         </ul>
 
-        <p className="text-xs text-muted mt-2 px-1">Photos or PDFs, up to {MAX_MB} MB. A clear phone photo of the form works fine.</p>
+        {/* Medication — only when the child needs something given */}
+        <div className="mt-5">
+          <div className="flex items-center justify-between gap-3 mb-2">
+            <h3 className="text-sm font-semibold text-brand flex items-center gap-2"><Pill size={16} className="text-accent" aria-hidden /> Medication authorizations</h3>
+            <button onClick={() => setFilling({ template: TEMPLATE.medication })} className="inline-flex items-center gap-1 text-sm font-medium text-accent min-h-10 px-2.5 rounded-ctl hover:bg-accent-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+              <Plus size={16} aria-hidden /> Authorize a medication
+            </button>
+          </div>
+          {medSubs.length === 0 ? (
+            <p className="text-sm text-muted bg-surface-2 rounded-card px-4 py-3">None on file. Staff can't give any medication — including over-the-counter — without one.</p>
+          ) : (
+            <ul className="space-y-2">
+              {medSubs.map((m) => {
+                const expired = m.status === "approved" && String(m.data.end) < new Date().toISOString().slice(0, 10);
+                return (
+                  <li key={m.id}>
+                    <button onClick={() => setViewing(m)} className="w-full text-left bg-surface border border-line rounded-card px-4 py-3 flex items-center gap-3 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                      <span className="flex-1 min-w-0">
+                        <span className="block text-sm font-semibold text-brand">{String(m.data.name)} · {String(m.data.dose)}</span>
+                        <span className="block text-xs text-muted">{String(m.data.schedule)}</span>
+                      </span>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${
+                        m.status === "submitted" ? "bg-info-soft text-info"
+                        : m.status === "returned" ? "bg-warning-soft text-warning"
+                        : expired ? "bg-danger-soft text-danger" : "bg-success-soft text-success"}`}>
+                        {m.status === "submitted" ? "In review" : m.status === "returned" ? "Sent back" : expired ? `Expired ${String(m.data.end)}` : `Through ${String(m.data.end)}`}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
 
-        <div className="mt-3 bg-surface-2 rounded-card p-3 text-xs text-muted flex gap-2">
+        {/* The one document that can't be done online — a doctor fills it in */}
+        <div className="mt-5">
+          <h3 className="text-sm font-semibold text-brand mb-2">From your doctor</h3>
+          {uploadError && (
+            <div role="alert" className="mb-2 bg-danger-soft border border-danger-line text-danger-strong text-sm rounded-card px-4 py-3">{uploadError}</div>
+          )}
+          {(() => {
+            const up = uploadFor("dh680");
+            const imm = child.immunizationStatus;
+            const style = up
+              ? { bg: "bg-info-soft", fg: "text-info", Icon: Clock, label: `Uploaded ${up.on} · the office is reviewing it` }
+              : imm === "current"
+                ? { bg: "bg-success-soft", fg: "text-success", Icon: Check, label: "On file and current" }
+                : imm === "expires-soon"
+                  ? { bg: "bg-warning-soft", fg: "text-warning", Icon: AlertTriangle, label: "Expires soon · upload the new one" }
+                  : { bg: "bg-danger-soft", fg: "text-danger", Icon: AlertTriangle, label: "Missing · required within 30 days of enrollment" };
+            return (
+              <div className="bg-surface border border-line rounded-[calc(var(--t-radius)+0.25rem)] p-4 flex items-center gap-3">
+                <div className={`w-11 h-11 rounded-card flex items-center justify-center flex-shrink-0 ${style.bg} ${style.fg}`}><style.Icon size={22} aria-hidden /></div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-brand text-sm sm:text-base">Florida Certification of Immunization <span className="text-xs font-mono text-muted ml-1">DH 680</span></p>
+                  <p className={`text-xs ${style.fg}`}>{style.label}</p>
+                  {up && (
+                    <p className="text-xs text-muted mt-1 flex items-center gap-1 min-w-0">
+                      <Paperclip size={12} className="flex-shrink-0" aria-hidden />
+                      <span className="truncate">{up.fileName}</span>
+                      <button onClick={() => setUploads((u) => u.filter((x) => x.docId !== "dh680"))} className="ml-1 text-danger hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-danger rounded flex-shrink-0">Remove</button>
+                    </p>
+                  )}
+                </div>
+                {!up && imm !== "current" && (
+                  <button onClick={() => chooseFile("dh680")} className="inline-flex items-center gap-1.5 text-sm font-semibold px-3.5 rounded-ctl border border-line text-brand min-h-11 flex-shrink-0 hover:border-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                    <Paperclip size={15} aria-hidden /> Upload
+                  </button>
+                )}
+              </div>
+            );
+          })()}
+          <p className="text-xs text-muted mt-2 px-1">Your pediatrician fills this one in, so it can't be completed here. A clear phone photo works — PDF or image, up to {MAX_MB} MB.</p>
+        </div>
+
+        <div className="mt-4 bg-surface-2 rounded-card p-3 text-xs text-muted flex gap-2">
           <ShieldCheck size={16} className="text-accent flex-shrink-0 mt-0.5" aria-hidden />
-          <p>Florida requires a current immunization certificate (DH 680) within 30 days of enrollment. We'll remind you 30 days before it expires.</p>
+          <p>Nothing you send changes {child.name.split(" ")[0]}'s record until the office has looked at it. That's deliberate — especially for allergies, where a change should always be seen by a person first.</p>
         </div>
       </section>
 
@@ -180,6 +292,40 @@ export default function ParentFamily() {
             setAddingPerson(false);
           }}
         />
+      )}
+
+      {filling && (
+        <FormFill
+          template={filling.template}
+          child={child}
+          previous={filling.previous}
+          onClose={() => setFilling(null)}
+          onDone={flash}
+        />
+      )}
+
+      {viewing && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center" onClick={() => setViewing(null)}>
+          <div role="dialog" aria-modal="true" aria-labelledby="sv-title" className="bg-surface rounded-t-[calc(var(--t-radius)+0.5rem)] sm:rounded-[calc(var(--t-radius)+0.25rem)] shadow-2xl w-full sm:max-w-2xl max-h-[92vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <header className="px-5 sm:px-6 py-4 border-b border-line flex items-start gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-mono uppercase tracking-widest text-muted">For {child.name}</p>
+                <h2 id="sv-title" className="text-lg font-bold text-brand">{TEMPLATE[viewing.formId].name}</h2>
+              </div>
+              <button onClick={() => setViewing(null)} aria-label="Close" className="w-11 h-11 flex items-center justify-center rounded-ctl text-muted hover:text-brand focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"><X size={20} aria-hidden /></button>
+            </header>
+            <div className="overflow-y-auto px-5 sm:px-6 py-5">
+              <SubmissionView submission={viewing} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Held back while a form is open, so it never sits on top of the send button. */}
+      {toast && !filling && !viewing && (
+        <div role="status" className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 bg-brand text-white text-sm font-medium px-4 py-3 rounded-card shadow-lg z-50 flex items-center gap-2">
+          <Check size={16} className="text-success" aria-hidden /> {toast}
+        </div>
       )}
     </div>
   );

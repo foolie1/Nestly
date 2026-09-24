@@ -1,14 +1,23 @@
 import { useState } from "react";
-import { incidents, staff } from "../data";
+import { staff, type Incident } from "../data";
 import { useRoster } from "../roster";
+import { useIncidents } from "../incidents";
+import { useLogs } from "../logs";
+import { SignaturePad } from "../signature";
+import IncidentForm from "./IncidentForm";
 
 type Props = { facilityId: string };
 
 export default function Compliance({ facilityId }: Props) {
-  const { roster: children } = useRoster();
+  const { roster: children, setImmunization } = useRoster();
+  const { at, sign } = useIncidents();
+  const { entries } = useLogs();
   const [tab, setTab] = useState<"dashboard" | "incidents" | "log">("dashboard");
-  const [selectedIncident, setSelectedIncident] = useState<typeof incidents[0] | null>(null);
-  const centerIncidents = incidents.filter((i) => i.facilityId === facilityId);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [guardianSig, setGuardianSig] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const centerIncidents = at(facilityId);
   const centerChildren = children.filter((c) => c.facilityId === facilityId);
   const centerStaff = staff.filter((s) => s.facilityId === facilityId);
 
@@ -17,6 +26,82 @@ export default function Compliance({ facilityId }: Props) {
     s.certifications.filter((c) => c.status !== "valid").map((c) => ({ staff: s.name, cert: c.name, status: c.status, expiry: c.expiry }))
   );
   const bgIssues = centerStaff.filter((s) => s.backgroundScreening.status !== "clear");
+  const unsigned = centerIncidents.filter((i) => !i.guardianSigned);
+
+  const flash = (message: string) => {
+    setToast(message);
+    setTimeout(() => setToast(null), 2800);
+  };
+
+  // One point per open item, off a clean 100. Nothing clever — but it moves
+  // when you fix something, which the hardcoded 89% never did.
+  const openItems = immIssues.length + certIssues.length + bgIssues.length + unsigned.length;
+  const score = Math.max(0, 100 - openItems * 4);
+  const scoreColor = score >= 95 ? "text-success" : score >= 85 ? "text-warning" : "text-danger";
+
+  const receiveImmunization = (childId: string, name: string) => {
+    setImmunization(childId, "current");
+    flash(`DH 680 marked received for ${name.split(" ")[0]}`);
+  };
+
+  /**
+   * The audit trail is assembled from what actually happened rather than kept
+   * as its own list — incidents filed, medication given, and the compliance
+   * flags currently standing against children and staff.
+   */
+  const today = new Date().toISOString().slice(0, 10);
+  const auditEvents: { id: string; ts: string; event: string; detail: string; user: string; type: string }[] = [
+    ...centerIncidents.map((i) => ({
+      id: `inc-${i.id}`,
+      ts: `${i.date}${i.time ? ` ${i.time}` : ""}`,
+      event: "Incident logged",
+      detail: `${i.type} — ${i.childName}. ${i.guardianNotified ? "Guardian notified" : "Guardian not yet notified"}${i.guardianSigned ? " and signed" : ""}.`,
+      user: i.reportedBy,
+      type: "incident",
+    })),
+    ...entries
+      .filter((e) => e.facilityId === facilityId && (e.type === "medication" || e.type === "incident"))
+      .map((e) => ({
+        id: `log-${e.id}`,
+        ts: `${today} ${e.timestamp}`,
+        event: e.type === "medication" ? "Medication given" : "Incident noted",
+        detail: `${e.childName} — ${e.title ?? e.detail}`,
+        user: e.loggedBy,
+        type: e.type === "medication" ? "info" : "warning",
+      })),
+    ...immIssues.map((c) => ({
+      id: `imm-${c.id}`,
+      ts: c.enrollmentDate,
+      event: "Immunization flag",
+      detail: `${c.name} DH 680 ${c.immunizationStatus === "missing" ? "missing — child may be excluded after 30 days" : "expires soon"}`,
+      user: "System",
+      type: "alert",
+    })),
+    ...certIssues.map((c, i) => ({
+      id: `cert-${i}`,
+      ts: c.expiry,
+      event: c.status === "expired" ? "Cert expired" : "Cert expiring",
+      detail: `${c.staff} — ${c.cert} ${c.status === "expired" ? "expired" : "expires"} ${c.expiry}`,
+      user: "System",
+      type: c.status === "expired" ? "alert" : "warning",
+    })),
+    ...bgIssues.map((s) => ({
+      id: `bg-${s.id}`,
+      ts: s.backgroundScreening.expiresDate,
+      event: "Background screening",
+      detail: `${s.name} Level 2 screening — status: ${s.backgroundScreening.status}`,
+      user: "System",
+      type: "warning",
+    })),
+  ].sort((a, b) => b.ts.localeCompare(a.ts));
+
+  const applyGuardianSignature = () => {
+    if (!selectedIncident || !guardianSig) return;
+    sign(selectedIncident.id, guardianSig);
+    flash(`Signature recorded for ${selectedIncident.childName.split(" ")[0]}`);
+    setGuardianSig(null);
+    setSelectedIncident(null);
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
@@ -40,8 +125,8 @@ export default function Compliance({ facilityId }: Props) {
           {/* Compliance score */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
             {[
-              { label: "Overall Score", value: "89%", color: "text-warning", sub: "2 open items require action" },
-              { label: "Incidents This Month", value: `${centerIncidents.length}`, color: "text-danger", sub: `${centerIncidents.filter((i) => !i.guardianSigned).length} pending guardian signature` },
+              { label: "Overall Score", value: `${score}%`, color: scoreColor, sub: openItems === 0 ? "Everything is clear" : `${openItems} open item${openItems === 1 ? "" : "s"} require action` },
+              { label: "Incidents This Month", value: `${centerIncidents.length}`, color: "text-danger", sub: `${unsigned.length} pending guardian signature` },
               { label: "Staff Compliance", value: `${centerStaff.length - bgIssues.length}/${centerStaff.length}`, color: "text-accent", sub: "fully cleared staff" },
             ].map((k) => (
               <div key={k.label} className="bg-surface border border-line rounded-card p-5">
@@ -77,7 +162,7 @@ export default function Compliance({ facilityId }: Props) {
                       <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${c.immunizationStatus === "missing" ? "bg-danger-soft text-danger" : "bg-warning-soft text-warning"}`}>
                         {c.immunizationStatus === "missing" ? "MISSING — exclude after 30 days" : "Expires soon"}
                       </span>
-                      <button className="text-xs text-accent hover:underline">Mark received</button>
+                      <button onClick={() => receiveImmunization(c.id, c.name)} className="text-xs font-medium text-accent min-h-10 px-2.5 rounded-ctl hover:bg-accent-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">Mark received</button>
                     </div>
                   </div>
                 ))
@@ -155,10 +240,13 @@ export default function Compliance({ facilityId }: Props) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted">{centerIncidents.length} incidents this month</p>
-            <button className="bg-brand text-white text-sm font-medium px-4 py-2.5 min-h-11 rounded-ctl hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors">
+            <button onClick={() => setShowForm(true)} className="bg-brand text-white text-sm font-medium px-4 py-2.5 min-h-11 rounded-ctl hover:bg-brand-hover focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors">
               + Log Incident
             </button>
           </div>
+          {centerIncidents.length === 0 && (
+            <div className="border-2 border-dashed border-line rounded-card p-10 text-center text-sm text-muted">No incidents logged this month.</div>
+          )}
           {centerIncidents.map((inc) => (
             <button
               key={inc.id}
@@ -191,31 +279,66 @@ export default function Compliance({ facilityId }: Props) {
           ))}
 
           {selectedIncident && (
-            <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-end" onClick={() => setSelectedIncident(null)}>
+            <div className="fixed inset-0 bg-black/30 z-50 flex items-start justify-end" onClick={() => { setSelectedIncident(null); setGuardianSig(null); }}>
               <div className="bg-surface h-full w-full sm:w-96 shadow-2xl overflow-y-auto" onClick={(e) => e.stopPropagation()}>
                 <div className="px-6 py-5 border-b border-line flex items-start justify-between">
                   <h2 className="text-lg font-bold text-brand">Incident Report</h2>
-                  <button onClick={() => setSelectedIncident(null)} className="text-muted hover:text-brand text-xl">×</button>
+                  <button onClick={() => { setSelectedIncident(null); setGuardianSig(null); }} className="text-muted hover:text-brand text-xl">×</button>
                 </div>
                 <div className="p-6 space-y-5">
                   {[
                     { label: "Child", value: selectedIncident.childName },
-                    { label: "Date", value: selectedIncident.date },
+                    { label: "When", value: [selectedIncident.date, selectedIncident.time].filter(Boolean).join(" · ") },
+                    { label: "Where", value: selectedIncident.location },
                     { label: "Type", value: selectedIncident.type },
                     { label: "Severity", value: selectedIncident.severity.toUpperCase() },
                     { label: "Reported By", value: selectedIncident.reportedBy },
-                    { label: "Description", value: selectedIncident.description },
-                  ].map((r) => (
-                    <div key={r.label}>
-                      <p className="text-xs font-mono text-muted uppercase tracking-widest mb-1">{r.label}</p>
-                      <p className="text-sm text-ink">{r.value}</p>
+                    { label: "Staff who saw it", value: selectedIncident.witnesses },
+                    { label: "What happened", value: selectedIncident.description },
+                    { label: "What was done", value: selectedIncident.actionTaken },
+                    {
+                      label: "Guardian notified",
+                      value: selectedIncident.guardianNotified
+                        ? `Yes${selectedIncident.notifiedMethod ? ` · ${selectedIncident.notifiedMethod.replace("-", " ")}` : ""}${selectedIncident.notifiedAt ? ` · ${selectedIncident.notifiedAt}` : ""}`
+                        : "Not yet — office follow-up needed",
+                    },
+                  ]
+                    .filter((r) => r.value)
+                    .map((r) => (
+                      <div key={r.label}>
+                        <p className="text-xs font-mono text-muted uppercase tracking-widest mb-1">{r.label}</p>
+                        <p className="text-sm text-ink">{r.value}</p>
+                      </div>
+                    ))}
+
+                  {selectedIncident.staffSignature && (
+                    <div>
+                      <p className="text-xs font-mono text-muted uppercase tracking-widest mb-1">Staff signature</p>
+                      <img src={selectedIncident.staffSignature} alt={`Signature of ${selectedIncident.reportedBy}`} className="w-full border border-line rounded-card bg-surface-2" />
                     </div>
-                  ))}
-                  {!selectedIncident.guardianSigned && (
+                  )}
+
+                  {selectedIncident.guardianSigned ? (
+                    <div className="bg-success-soft border border-success rounded-card p-4">
+                      <p className="text-sm font-semibold text-success">Guardian signature on file</p>
+                      {selectedIncident.guardianSignature && (
+                        <img src={selectedIncident.guardianSignature} alt="Guardian signature" className="mt-2 w-full border border-line rounded-card bg-surface" />
+                      )}
+                    </div>
+                  ) : (
                     <div className="bg-warning-soft border border-warning-line rounded-card p-4">
                       <p className="text-sm font-semibold text-warning">Guardian signature required</p>
-                      <p className="text-xs text-warning-strong mt-1">Send a signature request to the guardian via the messaging system.</p>
-                      <button className="mt-3 w-full py-2 bg-warning text-white rounded-ctl text-sm font-medium hover:bg-warning-strong transition-colors">Send Signature Request</button>
+                      <p className="text-xs text-warning-strong mt-1 mb-3">
+                        Collect it here when {selectedIncident.childName.split(" ")[0]} is picked up, or send a request through Messaging.
+                      </p>
+                      <SignaturePad value={guardianSig} onChange={setGuardianSig} label="Guardian signature" placeholder="Hand the device to the guardian" height={120} />
+                      <button
+                        onClick={applyGuardianSignature}
+                        disabled={!guardianSig}
+                        className="mt-3 w-full min-h-11 bg-warning text-white rounded-ctl text-sm font-semibold hover:bg-warning-strong disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-accent transition-colors"
+                      >
+                        Record signature
+                      </button>
                     </div>
                   )}
                 </div>
@@ -232,18 +355,13 @@ export default function Compliance({ facilityId }: Props) {
             <p className="text-xs text-muted mt-0.5">All compliance-relevant events · retained indefinitely per Florida default</p>
           </div>
           <div className="divide-y divide-line">
-            {[
-              { ts: "2026-08-31 08:02", event: "Child check-in", detail: "Amelia Torres checked in by Denise Morales", user: "Denise Morales", type: "info" },
-              { ts: "2026-08-30 15:44", event: "Invoice overdue", detail: "Reyes family invoice #inv003 flagged overdue (Aug 2026)", user: "System", type: "warning" },
-              { ts: "2026-08-29 11:30", event: "Incident logged", detail: "Minor injury — Noah Patel. Guardian notified and signed.", user: "Denise Morales", type: "incident" },
-              { ts: "2026-08-27 14:15", event: "Immunization flag", detail: "James Williams DH 680 missing — child may be excluded after 30 days", user: "System", type: "alert" },
-              { ts: "2026-08-25 09:00", event: "Background screening", detail: "Marcus Webb Level 2 screening submitted — status: pending", user: "Center Director", type: "info" },
-              { ts: "2026-08-20 08:00", event: "Cert expiration warning", detail: "Rashida Okafor CPR/First Aid expires in 30 days (Sep 20)", user: "System", type: "warning" },
-              { ts: "2026-08-15 10:30", event: "Ratio alert resolved", detail: "Clover Preschool ratio 1:16 — resolved within 5 minutes", user: "System", type: "alert" },
-            ].map((e, i) => (
-              <div key={i} className="px-6 py-3.5 flex items-center gap-4">
+            {auditEvents.length === 0 && (
+              <p className="px-6 py-8 text-center text-sm text-muted">Nothing recorded yet.</p>
+            )}
+            {auditEvents.map((e) => (
+              <div key={e.id} className="px-6 py-3.5 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
                 <span className="font-mono text-xs text-muted w-36 flex-shrink-0">{e.ts}</span>
-                <span className={`text-xs px-2 py-0.5 rounded font-mono flex-shrink-0 ${
+                <span className={`text-xs px-2 py-0.5 rounded font-mono flex-shrink-0 self-start ${
                   e.type === "alert" ? "bg-danger-soft text-danger" :
                   e.type === "incident" ? "bg-warning-soft text-warning" :
                   e.type === "warning" ? "bg-warning-soft text-warning" :
@@ -254,6 +372,16 @@ export default function Compliance({ facilityId }: Props) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {showForm && (
+        <IncidentForm facilityId={facilityId} onClose={() => setShowForm(false)} onSaved={flash} />
+      )}
+
+      {toast && (
+        <div role="status" className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-brand text-white text-sm font-medium px-4 py-3 rounded-card shadow-lg z-50">
+          ✓ {toast}
         </div>
       )}
     </div>
