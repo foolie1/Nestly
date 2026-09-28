@@ -48,6 +48,7 @@ const KIND: Record<NoteKind, { Icon: LucideIcon; bg: string; fg: string }> = {
 };
 
 const readKey = (userId: string) => `nestly.readNotes.${userId}`;
+const logKey = (userId: string) => `nestly.noteLog.${userId}`;
 
 const loadRead = (userId: string): string[] => {
   try {
@@ -56,6 +57,75 @@ const loadRead = (userId: string): string[] => {
     return [];
   }
 };
+
+/**
+ * A notification as it was when it first appeared, kept after the thing behind
+ * it is settled. The live list answers "what needs me now"; this answers "what
+ * came through this week, and did anyone deal with it" — which is the question
+ * you get asked after the fact, and the one a purely derived list can't answer.
+ */
+export type Archived = Note & { firstSeen: string; readAt?: string; clearedAt?: string };
+
+const LOG_CAP = 300;
+
+const loadLog = (userId: string): Archived[] => {
+  try {
+    const raw = JSON.parse(localStorage.getItem(logKey(userId)) || "[]");
+    return Array.isArray(raw) ? raw : [];
+  } catch {
+    return [];
+  }
+};
+
+/**
+ * Folds the live list into the archive. New ones are recorded, ones that are
+ * still live have their wording refreshed and any old "settled" stamp removed
+ * (the same problem can come back), and ones that have dropped off the live
+ * list are stamped settled. Returns null when nothing moved, so the caller
+ * doesn't write on every render.
+ */
+export function mergeLog(log: Archived[], live: Note[], read: string[], now: string): Archived[] | null {
+  let changed = false;
+  const left = new Map(log.map((a) => [a.id, a]));
+  const next: Archived[] = [];
+
+  for (const n of live) {
+    const prev = left.get(n.id);
+    const readAt = prev?.readAt ?? (read.includes(n.id) ? now : undefined);
+    if (!prev) {
+      next.push({ ...n, firstSeen: now, readAt });
+      changed = true;
+    } else {
+      if (prev.clearedAt || prev.title !== n.title || prev.body !== n.body || prev.readAt !== readAt) changed = true;
+      next.push({ ...prev, ...n, firstSeen: prev.firstSeen, readAt, clearedAt: undefined });
+      left.delete(n.id);
+    }
+  }
+
+  for (const a of left.values()) {
+    const readAt = a.readAt ?? (read.includes(a.id) ? now : undefined);
+    const clearedAt = a.clearedAt ?? now;
+    if (a.clearedAt !== clearedAt || a.readAt !== readAt) changed = true;
+    next.push({ ...a, readAt, clearedAt });
+  }
+
+  if (!changed) return null;
+  next.sort((a, b) => b.firstSeen.localeCompare(a.firstSeen));
+  return next.slice(0, LOG_CAP);
+}
+
+/** "Today 2:14 PM" for recent things, "Sep 12, 2:14 PM" for older ones. */
+export function stamp(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  const time = d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  const today = new Date();
+  const sameDay = d.toDateString() === today.toDateString();
+  const yesterday = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 1).toDateString() === d.toDateString();
+  if (sameDay) return `Today ${time}`;
+  if (yesterday) return `Yesterday ${time}`;
+  return `${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}, ${time}`;
+}
 
 const todayISO = () => new Date().toISOString().slice(0, 10);
 
@@ -331,13 +401,37 @@ export function NotificationBell({ facilityId, onNav }: Props) {
   const { user } = useAuth();
   const notes = useNotifications(facilityId);
   const [open, setOpen] = useState(false);
+  const [tab, setTab] = useState<"open" | "history">("open");
   const [read, setRead] = useState<string[]>([]);
+  const [log, setLog] = useState<Archived[]>([]);
 
   // Read state is per signed-in user, so switching demo accounts doesn't
   // inherit somebody else's "already seen".
   useEffect(() => {
     setRead(user ? loadRead(user.id) : []);
+    setLog(user ? loadLog(user.id) : []);
   }, [user?.id]);
+
+  const persistLog = useCallback(
+    (next: Archived[]) => {
+      setLog(next);
+      if (!user) return;
+      try {
+        localStorage.setItem(logKey(user.id), JSON.stringify(next));
+      } catch {
+        /* private browsing — history just won't survive a reload */
+      }
+    },
+    [user?.id],
+  );
+
+  // Keep the archive in step with the live list, including stamping the ones
+  // that have just been dealt with.
+  useEffect(() => {
+    if (!user) return;
+    const next = mergeLog(log, notes, read, new Date().toISOString());
+    if (next) persistLog(next);
+  }, [user?.id, notes, read, log, persistLog]);
 
   const persist = useCallback(
     (ids: string[]) => {
@@ -405,7 +499,7 @@ export function NotificationBell({ facilityId, onNav }: Props) {
               Notifications {count > 0 && <span className="text-xs font-mono text-muted">· {count} unread</span>}
             </h2>
             <div className="flex items-center gap-1">
-              {count > 0 && (
+              {tab === "open" && count > 0 && (
                 <button
                   onClick={() => persist(notes.map((n) => n.id))}
                   className="text-xs font-medium text-accent min-h-9 px-2 rounded-ctl hover:bg-accent-soft focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
@@ -423,6 +517,62 @@ export function NotificationBell({ facilityId, onNav }: Props) {
             </div>
           </div>
 
+          <div className="flex gap-1 px-3 py-2 border-b border-line" role="tablist" aria-label="Which notifications to show">
+            {([["open", `Needs attention${count ? ` (${count})` : ""}`], ["history", "History"]] as const).map(([id, label]) => (
+              <button
+                key={id}
+                role="tab"
+                aria-selected={tab === id}
+                onClick={() => setTab(id)}
+                className={`px-3 min-h-9 rounded-ctl text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-accent ${tab === id ? "bg-accent-soft text-accent" : "text-muted hover:text-brand"}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {tab === "history" ? (
+            <ul className="overflow-y-auto divide-y divide-line">
+              {log.map((a) => {
+                const k = KIND[a.kind];
+                return (
+                  <li key={a.id}>
+                    <button
+                      onClick={() => { setOpen(false); onNav(a.page); }}
+                      className="w-full text-left px-4 py-3 flex gap-3 hover:bg-surface-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent"
+                    >
+                      <span className={`w-9 h-9 rounded-card flex items-center justify-center flex-shrink-0 ${k.bg} ${k.fg}`}>
+                        <k.Icon size={18} aria-hidden />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-baseline justify-between gap-2">
+                          <span className="text-sm font-medium text-ink truncate">{a.title}</span>
+                          <time className="text-[11px] font-mono text-muted flex-shrink-0">{a.when || stamp(a.firstSeen)}</time>
+                        </span>
+                        <span className="block text-xs text-muted mt-0.5 line-clamp-2">{a.body}</span>
+                        <span className="flex flex-wrap items-center gap-1.5 mt-1.5">
+                          {a.clearedAt ? (
+                            <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-success-soft text-success">Taken care of · {stamp(a.clearedAt)}</span>
+                          ) : (
+                            <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-warning-soft text-warning">Still open</span>
+                          )}
+                          <span className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-surface-2 text-muted">
+                            {a.readAt ? `Seen ${stamp(a.readAt)}` : "Never opened"}
+                          </span>
+                        </span>
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+              {log.length === 0 && (
+                <li className="px-4 py-10 text-center">
+                  <p className="text-sm font-medium text-brand">No history yet</p>
+                  <p className="text-xs text-muted mt-1">Everything that shows up in the bell is kept here, including after it's handled.</p>
+                </li>
+              )}
+            </ul>
+          ) : (
           <ul className="overflow-y-auto divide-y divide-line">
             {notes.map((n) => {
               const k = KIND[n.kind];
@@ -455,9 +605,12 @@ export function NotificationBell({ facilityId, onNav }: Props) {
               </li>
             )}
           </ul>
+          )}
 
           <p className="px-4 py-2.5 border-t border-line text-[11px] text-muted">
-            These are built from what's actually open right now — clear the underlying item and it leaves this list.
+            {tab === "history"
+              ? "Kept on this device, newest first — the last 300, whether or not they were opened."
+              : "Built from what's actually open right now. Handle the underlying item and it moves to History."}
           </p>
         </div>
       )}
